@@ -120,7 +120,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
 
 
   // Register cron jobs
-  // await investmentCronJob(app);
+  await investmentCronJob(app);
 
   // Health Check Endpoint
   app.get('/health', async () => {
