@@ -2,6 +2,7 @@ import { FastifyCorsOptions } from '@fastify/cors';
 
 export const allowedOrigins = [
   'http://localhost:5173',
+  'https://tradelave.com',
 ];
 
 export const corsOptions: FastifyCorsOptions = {
