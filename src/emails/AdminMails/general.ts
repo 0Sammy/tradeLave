@@ -15,7 +15,7 @@ const renderDetailsTable = (details: Record<string, string | number | object>) =
             ${formatLabel(key)}
           </td>
           <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #111827; font-size: 14px;">
-            ${value}
+            ${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}
           </td>
         </tr>
       `,
