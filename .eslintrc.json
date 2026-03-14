@@ -1,0 +1,83 @@
+{
+    "env": {
+      "browser": true,
+      "es2021": true,
+      "node": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module",
+      "project": "./tsconfig.json"
+    },
+    "plugins": ["@typescript-eslint", "prettier"],
+    "rules": {
+      // General rules
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      ],
+      "no-console": "warn",
+      "eqeqeq": ["error", "always"],
+      "curly": ["error", "all"],
+      "no-var": "error",
+      "prefer-const": "error",
+      "no-multi-spaces": "error",
+  
+      // TypeScript-specific rules
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/explicit-module-boundary-types": "error",
+      "@typescript-eslint/member-delimiter-style": [
+        "error",
+        {
+          "multiline": {
+            "delimiter": "semi",
+            "requireLast": true
+          },
+          "singleline": {
+            "delimiter": "semi",
+            "requireLast": false
+          }
+        }
+      ],
+  
+      // Code formatting rules via Prettier
+      "prettier/prettier": [
+        "error",
+        {
+          "singleQuote": true,
+          "semi": true,
+          "tabWidth": 2,
+          "trailingComma": "es5",
+          "printWidth": 80,
+          "endOfLine": "lf"
+        }
+      ]
+    },
+    "overrides": [
+      {
+        "files": ["*.ts", "*.tsx"],
+        "rules": {
+          "@typescript-eslint/explicit-function-return-type": ["error"],
+          "@typescript-eslint/explicit-member-accessibility": [
+            "error",
+            { "accessibility": "explicit" }
+          ]
+        }
+      }
+    ],
+    "settings": {
+      "import/resolver": {
+        "typescript": {}
+      }
+    }
+  }
+  
