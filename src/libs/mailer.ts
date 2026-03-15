@@ -6,47 +6,59 @@ import { RESEND_API, FROM_EMAIL, REPLY_EMAIL, ADMIN_EMAIL } from "../config";
 
 const resend = new Resend(RESEND_API);
 
-// By passing Resend rate limiting
 const limiter = new Bottleneck({
-  minTime: 500,
+  minTime: 600,
   maxConcurrent: 1
 });
 
-async function _sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  try {
-    const data = await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
-      replyTo: REPLY_EMAIL,
-    });
+export async function sendEmail({
+  to,
+  subject,
+  html
+}: {
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  return limiter.schedule(async () => {
+    try {
+      const data = await resend.emails.send({
+        from: FROM_EMAIL,
+        to,
+        subject,
+        html,
+        replyTo: REPLY_EMAIL
+      });
 
-    console.log("✅ Email sent via Resend:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Failed to send email via Resend:", error);
-    throw error;
-  }
+      console.log("✅ Email sent:", data);
+      return data;
+    } catch (error) {
+      console.error("❌ Email failed:", error);
+      throw error;
+    }
+  });
 }
 
-async function _sendAdminEmail(html: string) {
-  try {
-    const data = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: "Admin Notification",
-      html,
-    });
+export async function sendAdminEmail(html: string) {
+  return limiter.schedule(async () => {
+    try {
+      const data = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: ADMIN_EMAIL,
+        subject: "Admin Notification",
+        html
+      });
 
-    console.log("✅ Admin Email sent via Resend:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Failed to send email via Resend:", error);
-    throw error;
-  }
+      console.log("✅ Admin email sent:", data);
+      return data;
+    } catch (error) {
+      console.error("❌ Admin email failed:", error);
+      throw error;
+    }
+  });
 }
 
-// Export wrapped versions
-export const sendEmail = limiter.wrap(_sendEmail);
-export const sendAdminEmail = limiter.wrap(_sendAdminEmail);
+limiter.on("failed", (error, jobInfo) => {
+  console.log("The error:", error)
+  console.log("Job failed:", jobInfo);
+});
