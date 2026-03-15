@@ -99,13 +99,13 @@ export const createUserHandler = async (request: FastifyRequest<{ Body: CreateUs
   });
 
   // Generate Email templates and send Emails
-  const welcomeEmailContent = welcome({ name: newUser.userName });
   const emailContent = verificationEmail({
     name: newUser.userName,
     verificationCode: newUser.verificationCode,
   });
-  await sendEmail({ to: newUser.email, subject: 'Welcome to Trade Lave', html: welcomeEmailContent.html });
+  const welcomeEmailContent = welcome({ name: newUser.userName });
   await sendEmail({ to: newUser.email, subject: 'Email Verification', html: emailContent.html });
+  await sendEmail({ to: newUser.email, subject: 'Welcome to Trade Lave', html: welcomeEmailContent.html });
 
   return sendResponse(reply, 201, true, 'Welcome! Your account is ready.', accessToken);
 };
