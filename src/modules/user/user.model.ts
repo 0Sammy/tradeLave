@@ -82,7 +82,7 @@ const userSchema = new Schema<UserDocument>(
     },
     passwordResetCode: { type: String },
     byPass: { type: Boolean, default: false },
-    isVerified: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: true },
     isSuspended: { type: Boolean, default: false },
     suspendedDate: { type: Date, default: null },
     encryptedPassword: { type: String, required: true },

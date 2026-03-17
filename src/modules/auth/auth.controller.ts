@@ -132,14 +132,8 @@ export const loginHandler = async (request: FastifyRequest<{ Body: LoginUserInpu
     })
     await sendAdminEmail(template.html);
 
-    const redirect = !user.isVerified
-      ? 'verification'
-      : !user.kyc.lastSubmissionDate || user.kyc.status === 'rejected'
-        ? 'kyc'
-        : 'user/dashboard';
-
     const message: string = activeSession !== null ? "Welcome — authentication successful. You have been logged out of your previous device." : "Authentication Successful. Welcome!!!"
-    return sendResponse(reply, 200, true, message, { accessToken, redirect, id: userId })
+    return sendResponse(reply, 200, true, message, { accessToken, id: userId })
   }
 
   return sendResponse(reply, 400, false, 'Incorrect Email or Password');

@@ -3,8 +3,9 @@ import PlanModel from "../plans/plans.model";
 import TransactionModel, { TransactionStatus, TransactionType } from "../transaction/transaction.model";
 
 // Utils
-import { USER_PUBLIC_FIELDS } from "../../utils/format";
+import { formatCurrency, USER_PUBLIC_FIELDS } from "../../utils/format";
 import mongoose from "mongoose";
+import { emitAndSaveNotification } from "../../utils/socket";
 
 // Create Investment
 export const createInvestment = async ({ user, coin, plan, capital }: { user: string, coin: string, plan: string, capital: number }) => {
@@ -16,7 +17,7 @@ export const createInvestment = async ({ user, coin, plan, capital }: { user: st
     const planName = planDoc.title;
     const roi = planDoc.roi;
     const duration = planDoc.durationDays;
-    const returnAmount = capital + (capital * (roi/100));
+    const returnAmount = capital + (capital * (roi / 100));
 
     const startedAt = new Date();
     const endsAt = new Date(startedAt.getTime() + duration * 24 * 60 * 60 * 1000);
@@ -150,6 +151,14 @@ export const processMaturedInvestments = async () => {
                     { $set: { roiTransactionId: roiTx[0]._id } },
                     { session }
                 );
+
+                await emitAndSaveNotification({
+                    user: inv.user,
+                    type: "transaction",
+                    subType: "roi",
+                    title: "Investment Completed",
+                    message: `${formatCurrency(inv.returnAmount)} (${inv.coin.toUpperCase()}) has been credited to your account. Your investment has completed successfully.`,
+                });
             });
         } finally {
             session.endSession();

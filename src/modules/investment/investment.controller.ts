@@ -14,9 +14,13 @@ import { TransactionCoin } from '../transaction/transaction.model';
 
 // Utils
 import { sendResponse } from '../../utils/response.utils';
-import generalTemplate from '../../emails/AdminMails/general';
-import { sendAdminEmail } from '../../libs/mailer';
+import { sendAdminEmail, sendEmail } from '../../libs/mailer';
 import { formatCurrency } from '../../utils/format';
+import { emitAndSaveNotification } from '../../utils/socket';
+
+// Templates
+import generalTemplate from '../../emails/AdminMails/general';
+import investment from '../../emails/UserMails/investment';
 
 
 // Create new investment
@@ -49,13 +53,37 @@ export const createInvestmentHandler = async (request: FastifyRequest<{ Body: Cr
         return sendResponse(reply, 403, false, "Sorry, you have reached the maximum time you can invest in this plan");
     }
 
-    // Create new investment, send admin notification and return
-    const newInvestment = await createInvestment({ user: userId, coin: data.coin as TransactionCoin, plan: data.plan, capital: data.amount });
+    // Create new investment, send notification and return
+    const newInv = await createInvestment({ user: userId, coin: data.coin as TransactionCoin, plan: data.plan, capital: data.amount });
+
+    // User Socket and Email Notification
+    await emitAndSaveNotification({
+        user: userId,
+        type: 'transaction',
+        subType: 'stake',
+        title: `New Stake`,
+        message: `${formatCurrency(newInv.capital)} (${newInv.coin.toUpperCase()}) staked — expected return ${formatCurrency(newInv.returnAmount)} in ${newInv.durationInDays} days. Stake in progress`,
+    });
+
+    const invEmail = investment({
+        name: user.userName,
+        coin: newInv.coin,
+        plan: newInv.plan,
+        capital: formatCurrency(newInv.capital),
+        roi: newInv.roi,
+        returnAmount: formatCurrency(newInv.returnAmount),
+        durationInDays: newInv.durationInDays,
+    })
+    await sendEmail({
+        to: user.email,
+        subject: invEmail.subject,
+        html: invEmail.html,
+    })
 
     // Admin Email Notification
     const template = generalTemplate({
         action: "A User Started A New Investment",
-        message: `The user with the email ${user.email} and username ${user.userName} just created a new investment of Plan: ${newInvestment.plan}, Capital: ${formatCurrency(newInvestment.capital)}, Coin: ${newInvestment.coin}. Kindly login and continue`,
+        message: `The user with the email ${user.email} and username ${user.userName} just created a new investment of Plan: ${newInv.plan}, Capital: ${formatCurrency(newInv.capital)}, Coin: ${newInv.coin}. Kindly login and continue`,
         name: user.userName,
         email: user.email,
     })
