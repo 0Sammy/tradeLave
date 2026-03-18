@@ -17,6 +17,7 @@ const transactionCore = z.object({
     required_error: 'Amount is required',
   }).int().min(1),
   network: z.string().optional(),
+  transactionHash: z.string().optional(),
   walletAddress: z.string().optional(),
 });
 
@@ -24,7 +25,6 @@ const transactionCore = z.object({
 const transactionWithMeta = transactionCore.extend({
   user: z.string(),
   _id: z.string(),
-  transactionHash: z.string().optional(),
   status: z.string(),
   details: z.record(z.string(), z.any()),
   createdAt: z.string().datetime(),
