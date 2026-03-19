@@ -100,9 +100,6 @@ const loginResponseSchema = z.object({
     accessToken: z.string({
       required_error: 'Returning access token is required',
     }),
-    redirect: z.string({
-      required_error: 'Redirect is required',
-    }),
     id: z.string({
       required_error: "ID is required"
     })
