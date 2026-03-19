@@ -221,6 +221,7 @@ export const kycUploadHandler = async (request: FastifyRequest, reply: FastifyRe
 
   if (!updatedUser) return sendResponse(reply, 403, false, 'User details was not updated. The user profile could not be accessed.');
 
+  // User Socket Notification
   await emitAndSaveNotification({
     user: decodedDetails.userId,
     type: 'system',
@@ -228,6 +229,16 @@ export const kycUploadHandler = async (request: FastifyRequest, reply: FastifyRe
     title: `Your KYC Submission is Under Review!`,
     message: `Thanks for submitting your Know Your Customer (KYC) documents. We've received your information and it's currently being reviewed.`,
   });
+
+  // Admin Email Notification
+  const template = generalTemplate({
+    action: "A User Submitted Their KYC",
+    message: `The user with the email ${updatedUser.email} and username ${updatedUser.userName} submitted their KYC, kindly login and continue`,
+    name: updatedUser.userName,
+    email: updatedUser.email,
+    accountId: updatedUser.accountId,
+  })
+  await sendAdminEmail(template.html);
 
   // Return a response
   return sendResponse(reply, 200, true, 'KYC submitted. Results pending; you will be updated soon.');
