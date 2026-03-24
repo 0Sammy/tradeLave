@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
 // Handlers
-import { createInvestmentHandler, getAllInvestmentsHandler, getUserInvestmentsHandler, updateInvestmentHandler, updateInvestmentROIHandler } from './investment.controller';
+import { createInvestmentHandler, getAllInvestmentsHandler, getUserInvestmentsHandler, updateInvestmentHandler } from './investment.controller';
 
 // Middlewares
 import { hasPermission } from '../../middlewares/auth';
@@ -43,14 +43,6 @@ export default async function investmentRoutes(app: FastifyInstance) {
             },
         },
     }, getUserInvestmentsHandler
-    )
-
-    // Update rate
-    app.patch("/updateRate", {
-        schema: {
-            tags: ['Investments', 'Users'],
-        },
-    }, updateInvestmentROIHandler
     )
 
     // Admin Endpoints

@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import axios from 'axios';
 
 // Services
-import { createNewTransaction, deleteTransaction, getCoinTransactions, getDashboardValues, getPrices, getTransactionById, getTransactions, getTransactionsWithTypes, getUserBalanceByCoin, getUserTransactions, patchTransaction, updateAllTransactionCoinAmounts, updateTransaction } from './transaction.service';
+import { createNewTransaction, deleteTransaction, getCoinTransactions, getDashboardValues, getPrices, getTransactionById, getTransactions, getTransactionsWithTypes, getUserBalanceByCoin, getUserTransactions, patchTransaction, updateTransaction } from './transaction.service';
 import { findUserById } from '../user/user.service';
 import { findAdminById } from '../admin/admin.service';
 import { getUserReferrer, updateReferral } from '../referral/referral.services';
@@ -254,12 +254,6 @@ export const patchTransactionHandler = async (request: FastifyRequest<{ Body: Pa
   return sendResponse(reply, 200, true, "Your transaction was updated successfully.")
 }
 
-// Update the coin amount
-export const updateCoinAmountsHandler = async (_: FastifyRequest, reply: FastifyReply) => {
-
-  const result = await updateAllTransactionCoinAmounts();
-  return sendResponse(reply, 200, true, "All transactions coin amount was updated successfully", result)
-};
 
 
 // Administrative Endpoint

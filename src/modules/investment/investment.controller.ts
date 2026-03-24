@@ -4,7 +4,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { findAdminById } from '../admin/admin.service';
 import { findUserById } from './../user/user.service';
 import { getPlanById } from '../plans/plans.service';
-import { createInvestment, findInvestments, getAllInvestments, getInvestmentById, getUserInvestments, updateAllInvestmentRate, updateInvestmentStatus } from './investment.services';
+import { createInvestment, findInvestments, getAllInvestments, getInvestmentById, getUserInvestments, updateInvestmentStatus } from './investment.services';
 import { getUserBalanceByCoin } from '../transaction/transaction.service';
 
 // Schemas
@@ -108,12 +108,6 @@ export const getUserInvestmentsHandler = async (request: FastifyRequest<{ Querys
     const investments = await getUserInvestments(userId, Number(page), Number(limit));
     return sendResponse(reply, 200, true, "User investments was fetched successfully", investments);
 }
-
-// Add rate
-export const updateInvestmentROIHandler = async (_: FastifyRequest, reply: FastifyReply) => {
-    const result = await updateAllInvestmentRate();
-    return sendResponse(reply, 200, true, "Rate added successfully", result)
-};
 
 // Administrative Endpoint
 
