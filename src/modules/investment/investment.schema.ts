@@ -13,6 +13,7 @@ const investmentCore = z.object({
     coin: z.nativeEnum(TransactionCoin),
     plan: z.string({ required_error: "Plan is required" }),
     amount: z.number().int().min(INVESTMENT_MINIMUM),
+    rate: z.number().int().nonnegative(),
 });
 
 const createInvestmentSchema = investmentCore.extend({

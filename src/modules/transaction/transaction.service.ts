@@ -1,9 +1,17 @@
-import mongoose from 'mongoose';
+import mongoose, { AnyBulkWriteOperation } from 'mongoose';
 import TransactionModel, { TransactionCoin, TransactionDocument, TransactionStatus, TransactionType } from './transaction.model';
 import InvestmentModel, { InvestmentStatus } from '../investment/investment.model';
+import axios from 'axios';
+import { COINGECKO_API_KEY } from '../../config';
 
 // Utils
-import { USER_PUBLIC_FIELDS } from '../../utils/format';
+import { coinMap, USER_PUBLIC_FIELDS } from '../../utils/format';
+import { coingeckoURL } from './transaction.controller';
+
+// Constants
+const cache = new Map();
+const CACHE_KEY = 'prices';
+const CACHE_TTL = 2 * 60 * 1000;
 
 //Type Declaration
 type newTransaction = {
@@ -11,6 +19,7 @@ type newTransaction = {
   coin: TransactionCoin;
   transactionType: TransactionType;
   amount: number;
+  coinAmount: number;
   network?: string;
   status?: string;
   walletAddress?: string;
@@ -21,6 +30,27 @@ type newTransaction = {
 export const createNewTransaction = async (input: newTransaction) => {
   const newTransaction = await TransactionModel.create(input);
   return newTransaction;
+};
+
+
+export const getPrices = async () => {
+  const now = Date.now();
+  const cached = cache.get(CACHE_KEY);
+
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  const { data } = await axios.get(coingeckoURL, {
+    headers: {
+      Accept: 'application/json',
+      'x-cg-demo-api-key': COINGECKO_API_KEY,
+    },
+  });
+
+  cache.set(CACHE_KEY, { data, timestamp: now });
+
+  return data;
 };
 
 //Fetch a Particular Transaction
@@ -58,24 +88,23 @@ export const getUserBalanceByCoin = async (userId: string) => {
       tx.transactionType === TransactionType.REFERRAL ||
       tx.transactionType === TransactionType.ROI
     ) {
-      balanceByCoin[coin] += tx.amount;
+      balanceByCoin[coin] += tx.coinAmount;
     } else if (
       tx.transactionType === TransactionType.WITHDRAWAL ||
       tx.transactionType === TransactionType.PENALTY
     ) {
-      balanceByCoin[coin] -= tx.amount;
+      balanceByCoin[coin] -= tx.coinAmount;
     }
   }
 
   // Deduct locked funds in investments
   for (const inv of investments) {
     const coin = inv.coin;
-    balanceByCoin[coin] -= inv.capital;
+    balanceByCoin[coin] -= (inv.capital / inv.rate);
   }
 
   return balanceByCoin;
 };
-
 
 // Get a users coin transactions with pagination
 export const getCoinTransactions = async (user: string, coin: TransactionCoin, page = 1, limit = 50) => {
@@ -101,85 +130,84 @@ export const getCoinTransactions = async (user: string, coin: TransactionCoin, p
 };
 
 // Dashboard values
-export const getDashboardValues = async function getDashboardValues(userId: string) {
+export const getDashboardValues = async (userId: string) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  const [txFacetResult, investmentResult] = await Promise.all([
-    TransactionModel.aggregate([
-      { $match: { user: userObjectId, status: TransactionStatus.SUCCESSFUL } },
-      {
-        $facet: {
-          added: [
-            {
-              $match: {
-                transactionType: {
-                  $in: [
-                    TransactionType.DEPOSIT,
-                    TransactionType.BONUS,
-                    TransactionType.REFERRAL,
-                    TransactionType.ROI,
-                  ],
-                },
-              },
-            },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-          removed: [
-            {
-              $match: {
-                transactionType: {
-                  $in: [TransactionType.WITHDRAWAL, TransactionType.PENALTY],
-                },
-              },
-            },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-          rois: [
-            { $match: { transactionType: TransactionType.ROI } },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-          rewards: [
-            { $match: { transactionType: TransactionType.REFERRAL } },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-        },
-      },
-    ]),
+  // Fetch prices (cached)
+  const priceData = await getPrices();
 
-    // All investments except CANCELLED
-    InvestmentModel.aggregate([
-      {
-        $match: {
-          user: userObjectId,
-          status: { $ne: InvestmentStatus.CANCELLED },
-        },
+  // Aggregate transactions PER COIN
+  const txs = await TransactionModel.aggregate([
+    {
+      $match: {
+        user: userObjectId,
+        status: 'successful',
       },
-      { $group: { _id: null, total: { $sum: "$capital" } } },
-    ]),
+    },
+    {
+      $group: {
+        _id: {
+          coin: '$coin',
+          type: '$transactionType',
+        },
+        total: { $sum: '$coinAmount' },
+      },
+    },
   ]);
 
-  const facet = txFacetResult[0] ?? {};
-  const added = (facet.added?.[0]?.total ?? 0) as number;
-  const removed = (facet.removed?.[0]?.total ?? 0) as number;
+  // Aggregate ACTIVE investments ONLY (for holdings)
+  const investments = await InvestmentModel.aggregate([
+    {
+      $match: {
+        user: userObjectId,
+        status: InvestmentStatus.ACTIVE,
+      },
+    },
+    {
+      $group: {
+        _id: '$coin',
+        total: { $sum: '$capital' },
+      },
+    },
+  ]);
 
-  const rawBalance = added - removed;
+  // Build coin balance map (ONLY transactions)
+  const balanceByCoin = await getUserBalanceByCoin(userId)
+  let totalROIs = 0;
+  let totalRewards = 0;
 
-  const totalHoldings = (investmentResult[0]?.total ?? 0) as number;
-  const totalROIs = (facet.rois?.[0]?.total ?? 0) as number;
-  const totalRewards = (facet.rewards?.[0]?.total ?? 0) as number;
+  for (const tx of txs) {
+    const type = tx._id.type;
+    const amount = tx.total;
 
-  // REAL available balance (funds not locked in investments)
-  const totalBalance = rawBalance - totalHoldings;
+    if (type === 'roi') totalROIs += amount;
+    if (type === 'referral') totalRewards += amount;
+  }
+
+  // Convert transaction balances → USD
+  let totalBalance = 0;
+
+  for (const coin in balanceByCoin) {
+    const apiKey = coinMap[coin];
+    const price = priceData?.[apiKey]?.usd ?? 0;
+
+    totalBalance += balanceByCoin[coin as TransactionCoin] * price;
+  }
+
+  // Compute ONLY total holdings (ACTIVE investments)
+  let activeStakes = 0;
+
+  for (const inv of investments) {
+    activeStakes += inv.total;
+  }
 
   return {
     totalBalance,
-    totalHoldings,
+    activeStakes,
     totalROIs,
     totalRewards,
   };
 };
-
-
 
 // Fetch Transaction based on Transaction Types
 export const getTransactionsWithTypes = async (user: string, transactionType: TransactionType, page = 1, limit = 50,) => {
@@ -208,11 +236,62 @@ export const patchTransaction = async (transactionId: string, hash: string) => {
   });
 }
 
+// Add coinAmount
+export const updateAllTransactionCoinAmounts = async () => {
+
+  // Fetch prices
+  const { data } = await axios.get(coingeckoURL, {
+    headers: {
+      Accept: 'application/json',
+      'x-cg-demo-api-key': COINGECKO_API_KEY,
+    },
+  });
+
+  const priceData = data;
+
+  // Fetch transactions
+  const transactions = await TransactionModel.find();
+
+  const bulkOps: AnyBulkWriteOperation<TransactionDocument>[] = [];
+
+  // Build bulk operations safely
+  for (const tx of transactions) {
+    const coinKey = tx.coin.toLowerCase();
+    const apiKey = coinMap[coinKey];
+
+    const price = priceData?.[apiKey]?.usd;
+
+    // skip invalid price
+    if (!price || price <= 0) continue;
+
+    const coinAmount = Math.ceil((tx.amount / price) * 100) / 100;
+
+    bulkOps.push({
+      updateOne: {
+        filter: { _id: tx._id },
+        update: { coinAmount },
+      },
+    });
+  }
+
+  // Execute bulk write
+  if (bulkOps.length > 0) {
+    const result = await TransactionModel.bulkWrite(bulkOps);
+
+    return {
+      updatedCount: result.modifiedCount,
+      totalProcessed: transactions.length,
+    };
+  }
+
+  return { updatedCount: 0, totalProcessed: transactions.length };
+};
 
 
-//Admin Services
 
-//Fetch all transactions with pagination
+// Admin Services
+
+// Fetch all transactions with pagination
 export const getTransactions = async (transactionType?: TransactionType, page = 1, limit = 50) => {
 
   const skip = (page - 1) * limit;
@@ -241,7 +320,7 @@ export const getTransactions = async (transactionType?: TransactionType, page = 
   };
 };
 
-//Fetch a specific user transactions
+// Fetch a specific user transactions
 export const getUserTransactions = async (user: string, page = 1, limit = 50, transactionType?: TransactionType) => {
 
   const skip = (page - 1) * limit;
@@ -262,7 +341,7 @@ export const getUserTransactions = async (user: string, page = 1, limit = 50, tr
   return { data: transactions, pagination: { total, page, pages: Math.ceil(total / limit) } };
 };
 
-//Update a transaction
+// Update a transaction
 export const updateTransaction = async (id: string, data: Partial<TransactionDocument>): Promise<{ success: boolean, reason: string }> => {
 
   const transaction = await TransactionModel.findById(id);
@@ -275,7 +354,7 @@ export const updateTransaction = async (id: string, data: Partial<TransactionDoc
     const balances = await getUserBalanceByCoin(transaction.user.toString());
     const userBalance = balances[transaction.coin] || 0;
 
-    if (userBalance < transaction.amount) {
+    if (userBalance < transaction.coinAmount) {
       return { success: false, reason: 'User has Insufficient balance for transaction' };
     }
   }
@@ -284,7 +363,7 @@ export const updateTransaction = async (id: string, data: Partial<TransactionDoc
   return { success: true, reason: 'Transaction was updated successfully.' };
 };
 
-//Delete a transaction
+// Delete a transaction
 export const deleteTransaction = async (id: string) => {
   return await TransactionModel.findByIdAndDelete(id);
 };

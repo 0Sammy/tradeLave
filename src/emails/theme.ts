@@ -143,7 +143,7 @@ export const emailHeader = (title: string) => `
   </div>
 `;
 
-export const detailsBox = (rows: { label: string; value: string; isLink?: boolean }[]) => `
+export const detailsBox = (rows: { label: string; value: string | number; isLink?: boolean }[]) => `
   <div class="details">
     ${rows
         .map(

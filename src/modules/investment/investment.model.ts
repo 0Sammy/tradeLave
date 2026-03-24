@@ -14,6 +14,7 @@ export type InvestmentDocument = Document & {
   coin: TransactionCoin;
   plan: string
   capital: number;
+  rate: number;
   returnAmount: number;
   roi: number;       
   durationInDays: number;
@@ -32,6 +33,7 @@ const investmentSchema = new Schema<InvestmentDocument>(
     plan: { type: String, required: true },
 
     capital: { type: Number, required: true },
+    rate: { type: Number, required: true },
     returnAmount: { type: Number, required: true },
     roi: { type: Number, required: true },             
     durationInDays: { type: Number, required: true },      

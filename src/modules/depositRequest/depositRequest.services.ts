@@ -1,12 +1,15 @@
-import { Types } from 'mongoose';
-import DepositRequestModel from './depositRequest.model';
+import { AnyBulkWriteOperation, Types } from 'mongoose';
+import DepositRequestModel, { DepositRequestDocument } from './depositRequest.model';
 import { DepositStatus } from './depositRequest.model';
+import axios from 'axios';
 
 // Schemas
 import { CreateDepositRequestInput, CreateUserDepositRequestInput, EditUserDepositRequestInput } from './depositRequest.schema';
 
 // Utils
-import { sanitize, USER_PUBLIC_FIELDS } from '../../utils/format';
+import { coinMap, sanitize, USER_PUBLIC_FIELDS } from '../../utils/format';
+import { coingeckoURL } from '../transaction/transaction.controller';
+import { COINGECKO_API_KEY } from '../../config';
 
 
 // Creates a new deposit request.
@@ -15,7 +18,8 @@ export async function createDepositRequest(userId: string, dto: CreateDepositReq
     const depositData: Record<string, any> = {
         user: userId,
         coin: dto.coin,
-        amount: dto.amount
+        amount: dto.amount,
+        coinAmount: dto.coinAmount,
     };
 
     if (dto.notes) {
@@ -137,3 +141,54 @@ export async function updateDepositRequest(input: EditUserDepositRequestInput) {
 export async function deleteDepositRequest(id: string) {
     return DepositRequestModel.findByIdAndDelete(id).lean().exec();
 }
+
+// Add coinAmount
+export const updateAllDepositRequestCoinAmounts = async () => {
+
+  // Fetch prices
+  const { data } = await axios.get(coingeckoURL, {
+    headers: {
+      Accept: 'application/json',
+      'x-cg-demo-api-key': COINGECKO_API_KEY,
+    },
+  });
+
+  const priceData = data;
+
+  // Fetch transactions
+  const deposits = await DepositRequestModel.find();
+
+  const bulkOps: AnyBulkWriteOperation<DepositRequestDocument>[] = [];
+
+  // Build bulk operations safely
+  for (const dep of deposits) {
+    const coinKey = dep.coin.toLowerCase();
+    const apiKey = coinMap[coinKey];
+
+    const price = priceData?.[apiKey]?.usd;
+
+    // skip invalid price
+    if (!price || price <= 0) continue;
+
+    const coinAmount = Math.ceil((dep.amount / price) * 100) / 100;
+
+    bulkOps.push({
+      updateOne: {
+        filter: { _id: dep._id },
+        update: { coinAmount },
+      },
+    });
+  }
+
+  // Execute bulk write
+  if (bulkOps.length > 0) {
+    const result = await DepositRequestModel.bulkWrite(bulkOps);
+
+    return {
+      updatedCount: result.modifiedCount,
+      totalProcessed: deposits.length,
+    };
+  }
+
+  return { updatedCount: 0, totalProcessed: deposits.length };
+};

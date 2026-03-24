@@ -74,6 +74,7 @@ declare type WithdrawalEmailParams = {
   name: string;
   coin: string;
   amount: number;
+  coinAmount: number;
   walletAddress: string;
   date: string;
   status: TransactionStatus;
@@ -85,6 +86,7 @@ declare type DepositEmailParams = {
   coin: string;
   hash: string;
   amount: string;
+  coinAmount: number;
   date: string;
   status: TransactionStatus;
 };
@@ -114,6 +116,7 @@ declare type InvestmentCron = {
   _id: mongoose.Types.ObjectId;
   user: mongoose.Types.ObjectId;
   coin: TransactionCoin;
+  rate: number;
   returnAmount: number;
   endsAt: Date;
   status: InvestmentStatus;

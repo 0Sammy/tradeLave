@@ -7,15 +7,10 @@ import { responseCore } from '../general/general.schema';
 
 // Transaction Core
 const transactionCore = z.object({
-  coin: z.nativeEnum(TransactionCoin, {
-    required_error: 'Coin is required',
-  }),
-  transactionType: z.nativeEnum(TransactionType, {
-    required_error: 'Transaction type is required',
-  }),
-  amount: z.number({
-    required_error: 'Amount is required',
-  }).int().min(1),
+  coin: z.nativeEnum(TransactionCoin, { required_error: 'Coin is required' }),
+  transactionType: z.nativeEnum(TransactionType, { required_error: 'Transaction type is required' }),
+  amount: z.number({ required_error: 'Amount is required' }).int().min(1),
+  coinAmount: z.number({ required_error: 'Coin Equivalent is required' }).int().nonnegative(),
   network: z.string().optional(),
   transactionHash: z.string().optional(),
   walletAddress: z.string().optional(),
@@ -35,19 +30,13 @@ const createTransactionSchema = transactionCore;
 
 // Create User Transactions
 const createUserTransactionSchema = createTransactionSchema.extend({
-  user: z.string({
-    required_error: 'User is required',
-  }),
-  status: z.nativeEnum(TransactionStatus, {
-    required_error: 'Status is required',
-  }),
+  user: z.string({ required_error: 'User is required' }),
+  status: z.nativeEnum(TransactionStatus, { required_error: 'Status is required' }),
 });
 
 // Fetch Transactions
 const fetchTransactionSchema = z.object({
-  transactionId: z.string({
-    required_error: 'TransactionID is required',
-  }),
+  transactionId: z.string({ required_error: 'TransactionID is required' }),
 });
 
 // Fetch User Balance

@@ -131,3 +131,16 @@ export const formatCurrency = (value: number) => {
         style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2,
     }).format(value)
 }
+
+// Coin Map
+export const coinMap: Record<string, string> = {
+  bitcoin: 'bitcoin',
+  ethereum: 'ethereum',
+  dogecoin: 'dogecoin',
+  ripple: 'ripple',
+  'shiba inu': 'shiba-inu',
+  solana: 'solana',
+  'usd coin': 'usd-coin',
+  'tether erc20': 'tether',
+  'tether trc20': 'tether',
+};

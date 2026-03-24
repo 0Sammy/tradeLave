@@ -4,7 +4,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { findAdminById } from '../admin/admin.service';
 import { findUserById } from './../user/user.service';
 import { getPlanById } from '../plans/plans.service';
-import { createInvestment, findInvestments, getAllInvestments, getInvestmentById, getUserInvestments, updateInvestmentStatus } from './investment.services';
+import { createInvestment, findInvestments, getAllInvestments, getInvestmentById, getUserInvestments, updateAllInvestmentRate, updateInvestmentStatus } from './investment.services';
 import { getUserBalanceByCoin } from '../transaction/transaction.service';
 
 // Schemas
@@ -44,7 +44,8 @@ export const createInvestmentHandler = async (request: FastifyRequest<{ Body: Cr
 
     // Make sure the user has the money
     const userBalance = await getUserBalanceByCoin(userId);
-    const coinBalance = userBalance[data.coin];
+    const coinAmount = userBalance[data.coin];
+    const coinBalance = coinAmount * data.rate;
     if (coinBalance < data.amount) return sendResponse(reply, 409, false, "Staked amount is greater than available balance");
 
     // Check how many times a user has invested in that plan
@@ -54,7 +55,7 @@ export const createInvestmentHandler = async (request: FastifyRequest<{ Body: Cr
     }
 
     // Create new investment, send notification and return
-    const newInv = await createInvestment({ user: userId, coin: data.coin as TransactionCoin, plan: data.plan, capital: data.amount });
+    const newInv = await createInvestment({ user: userId, coin: data.coin as TransactionCoin, rate: data.rate, plan: data.plan, capital: data.amount });
 
     // User Socket and Email Notification
     await emitAndSaveNotification({
@@ -107,6 +108,12 @@ export const getUserInvestmentsHandler = async (request: FastifyRequest<{ Querys
     const investments = await getUserInvestments(userId, Number(page), Number(limit));
     return sendResponse(reply, 200, true, "User investments was fetched successfully", investments);
 }
+
+// Add rate
+export const updateInvestmentROIHandler = async (_: FastifyRequest, reply: FastifyReply) => {
+    const result = await updateAllInvestmentRate();
+    return sendResponse(reply, 200, true, "Rate added successfully", result)
+};
 
 // Administrative Endpoint
 

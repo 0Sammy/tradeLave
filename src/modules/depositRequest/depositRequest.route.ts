@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
 // Handlers
-import { createDepositRequestHandler, createUserDepositRequestHandler, deleteDepositRequestHandler, deleteUserDepositRequestHandler, fetchAllUserDepositsRequestHandler, fetchUserDepositRequestHandler, getUserDepositRequestHandler, updateDepositRequestHandler, updateUserDepositRequestHandler } from './depositRequest.controller';
+import { createDepositRequestHandler, createUserDepositRequestHandler, deleteDepositRequestHandler, deleteUserDepositRequestHandler, fetchAllUserDepositsRequestHandler, fetchUserDepositRequestHandler, getUserDepositRequestHandler, updateCoinAmountsHandler, updateDepositRequestHandler, updateUserDepositRequestHandler } from './depositRequest.controller';
 
 // Middlewares
 import { hasPermission } from '../../middlewares/auth';
@@ -14,7 +14,7 @@ import { generalRef, PaginationInput } from '../general/general.schema';
 // Deposit Request Routes
 export default async function depositRequestRoutes(app: FastifyInstance) {
 
-    //Create new deposit request
+    // Create new deposit request
     app.post<{ Body: CreateDepositRequestInput }>('/create',
         {
             preHandler: app.authenticate,
@@ -79,6 +79,14 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
         },
         deleteDepositRequestHandler
     );
+
+    // Update coinAmount
+    app.patch("/updateCoinAmount", {
+        schema: {
+            tags: ['DepositRequest', 'Users'],
+        },
+    }, updateCoinAmountsHandler
+    )
 
     // Administrative Routes
 

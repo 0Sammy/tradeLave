@@ -10,6 +10,7 @@ const roleEnum = z.enum(['user', 'admin']);
 const createDepositRequestSchema = z.object({
     coin: z.nativeEnum(TransactionCoin),
     amount: z.number().nonnegative(),
+    coinAmount: z.number().nonnegative(),
     notes: z.string().optional(),
 });;
 
@@ -45,6 +46,7 @@ const editUserDepositRequestSchema = z.object({
     }),
     coin: z.nativeEnum(TransactionCoin).optional(),
     amount: z.number().nonnegative().optional(),
+    coinAmount: z.number().nonnegative().optional(),
     status: z.nativeEnum(DepositStatus).optional(),
     hasPaid: z.boolean().optional(),
     details: z.object({

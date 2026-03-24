@@ -1,6 +1,6 @@
 import { baseEmailStyles, emailHeader, detailsBox, statusBlock, securityFooter, brandFooter } from "../theme";
 
-export default function withdrawalEmail({ name, coin, amount, walletAddress, date, status }: WithdrawalEmailParams) {
+export default function withdrawalEmail({ name, coin, amount, coinAmount, walletAddress, date, status }: WithdrawalEmailParams) {
 
   const upper = coin.toUpperCase();
 
@@ -63,6 +63,7 @@ export default function withdrawalEmail({ name, coin, amount, walletAddress, dat
   ${detailsBox([
       { label: "Coin", value: upper },
       { label: "Amount", value: amount.toLocaleString() },
+      { label: "Coin Equivalent", value: coinAmount },
       { label: "Wallet", value: walletAddress },
       { label: "Date", value: date },
     ])}

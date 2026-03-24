@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 
 // Services
 import { findUserById } from '../user/user.service';
-import { adminCreateDepositRequest, createDepositRequest, deleteDepositRequest, getAllDepositRequests, getDepositRequestById, getPendingRequests, getUserDepositRequests, updateDepositRequest } from './depositRequest.services';
+import { adminCreateDepositRequest, createDepositRequest, deleteDepositRequest, getAllDepositRequests, getDepositRequestById, getPendingRequests, getUserDepositRequests, updateAllDepositRequestCoinAmounts, updateDepositRequest } from './depositRequest.services';
 import { findAdminById } from '../admin/admin.service';
 import { createNewTransaction } from '../transaction/transaction.service';
 
@@ -146,6 +146,14 @@ export const deleteDepositRequestHandler = async (request: FastifyRequest<{ Para
     return sendResponse(reply, 204, true, "The Deposit request was deleted successfully.");
 }
 
+// Update the coin amount
+export const updateCoinAmountsHandler = async (_: FastifyRequest, reply: FastifyReply) => {
+
+  const result = await updateAllDepositRequestCoinAmounts();
+  return sendResponse(reply, 200, true, "All deposit requests coin amount was updated successfully", result)
+};
+
+
 // Administrative Handlers
 
 // Create deposit request
@@ -229,7 +237,15 @@ export const updateUserDepositRequestHandler = async (request: FastifyRequest<{ 
 
     // If Status is successful create a new deposit
     if (status === "successful" && depositRequest.status !== "successful") {
-        const data = { user: depositRequest.user.toString(), coin: depositRequest.coin, transactionType: TransactionType.DEPOSIT, amount: depositRequest.amount, status: "successful", transactionHash: generateTransactionHash() }
+        const data = {
+            user: depositRequest.user.toString(),
+            coin: depositRequest.coin,
+            transactionType: TransactionType.DEPOSIT,
+            amount: depositRequest.amount,
+            coinAmount: depositRequest.coinAmount,
+            status: "successful",
+            transactionHash: generateTransactionHash()
+        }
         await createNewTransaction(data);
 
         await emitAndSaveNotification({

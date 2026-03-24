@@ -1,6 +1,6 @@
 import { baseEmailStyles, emailHeader, detailsBox, statusBlock, securityFooter, brandFooter } from "../theme";
 
-export default function depositEmail({ name, coin, hash, amount, date, status }: DepositEmailParams) {
+export default function depositEmail({ name, coin, hash, amount, coinAmount, date, status }: DepositEmailParams) {
   const upper = coin.toUpperCase();
 
   const statuses = {
@@ -62,6 +62,7 @@ export default function depositEmail({ name, coin, hash, amount, date, status }:
   ${detailsBox([
       { label: "Coin", value: upper },
       { label: "Amount", value: amount.toLocaleString() },
+      { label: "Coin Equivalent", value: coinAmount },
       { label: "Hash", value: hash },
       { label: "Date", value: date },
     ])}

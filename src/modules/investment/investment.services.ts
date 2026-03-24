@@ -1,14 +1,17 @@
-import InvestmentModel, { InvestmentStatus } from "./investment.model";
+import InvestmentModel, { InvestmentDocument, InvestmentStatus } from "./investment.model";
 import PlanModel from "../plans/plans.model";
 import TransactionModel, { TransactionStatus, TransactionType } from "../transaction/transaction.model";
+import axios from "axios";
 
 // Utils
-import { formatCurrency, USER_PUBLIC_FIELDS } from "../../utils/format";
-import mongoose from "mongoose";
+import { coinMap, formatCurrency, USER_PUBLIC_FIELDS } from "../../utils/format";
+import mongoose, { AnyBulkWriteOperation } from "mongoose";
 import { emitAndSaveNotification } from "../../utils/socket";
+import { COINGECKO_API_KEY } from "../../config";
+import { coingeckoURL } from "../transaction/transaction.controller";
 
 // Create Investment
-export const createInvestment = async ({ user, coin, plan, capital }: { user: string, coin: string, plan: string, capital: number }) => {
+export const createInvestment = async ({ user, coin, rate, plan, capital }: { user: string, coin: string, rate: number, plan: string, capital: number }) => {
 
     // Fetch plan data
     const planDoc = await PlanModel.findById(plan);
@@ -22,7 +25,7 @@ export const createInvestment = async ({ user, coin, plan, capital }: { user: st
     const startedAt = new Date();
     const endsAt = new Date(startedAt.getTime() + duration * 24 * 60 * 60 * 1000);
 
-    return await InvestmentModel.create({ user, coin, plan: planName, capital, roi, returnAmount, durationInDays: duration, startedAt, endsAt });
+    return await InvestmentModel.create({ user, coin, rate, plan: planName, capital, roi, returnAmount, durationInDays: duration, startedAt, endsAt });
 };
 
 // Get Investment by ID
@@ -89,6 +92,7 @@ export const processMaturedInvestments = async () => {
             _id: 1,
             user: 1,
             coin: 1,
+            rate: 1,
             returnAmount: 1,
             endsAt: 1,
             status: 1,
@@ -133,6 +137,7 @@ export const processMaturedInvestments = async () => {
                             coin: inv.coin,
                             transactionType: TransactionType.ROI,
                             amount: inv.returnAmount,
+                            coinAmount: inv.returnAmount / inv.rate,
                             network: null,
                             status: TransactionStatus.SUCCESSFUL,
                             walletAddress: "",
@@ -165,3 +170,53 @@ export const processMaturedInvestments = async () => {
         }
     }
 }
+
+// Update Rate
+export const updateAllInvestmentRate = async () => {
+
+    // Fetch latest prices
+    const { data } = await axios.get(coingeckoURL, {
+        headers: {
+            Accept: 'application/json',
+            'x-cg-demo-api-key': COINGECKO_API_KEY,
+        },
+    });
+
+    const priceData = data;
+
+    // Fetch investments
+    const investments = await InvestmentModel.find();
+
+    const bulkOps: AnyBulkWriteOperation<InvestmentDocument>[] = [];
+
+    // Build updates
+    for (const inv of investments) {
+        const coinKey = inv.coin.toLowerCase();
+        const apiKey = coinMap[coinKey];
+
+        const price = priceData?.[apiKey]?.usd;
+
+        if (!price || price <= 0) continue;
+
+        // Rate
+        const rate = price;
+
+        bulkOps.push({
+            updateOne: {
+                filter: { _id: inv._id },
+                update: { rate },
+            },
+        });
+    }
+
+    // Execute bulk update
+    if (bulkOps.length > 0) {
+        const result = await InvestmentModel.bulkWrite(bulkOps);
+        return { updatedCount: result.modifiedCount, totalProcessed: investments.length, };
+    }
+
+    return {
+        updatedCount: 0,
+        totalProcessed: investments.length,
+    };
+};

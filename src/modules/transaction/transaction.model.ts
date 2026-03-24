@@ -32,6 +32,7 @@ export type TransactionDocument = Document & {
   coin: TransactionCoin;
   transactionType: TransactionType;
   amount: number;
+  coinAmount: number;
   network: string | null;
   walletAddress: string;
   transactionHash: string;
@@ -47,6 +48,7 @@ const transactionSchema: Schema = new Schema<TransactionDocument>(
     coin: { type: String, enum: Object.values(TransactionCoin), required: true },
     transactionType: { type: String, enum: Object.values(TransactionType), required: true },
     amount: { type: Number, required: true },
+    coinAmount: { type: Number, required: true },
     network: { type: String, default: null },
     walletAddress: { type: String },
     transactionHash: { type: String },

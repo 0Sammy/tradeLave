@@ -17,6 +17,7 @@ export type DepositRequestDocument = Document & {
     user: mongoose.Types.ObjectId;
     coin: TransactionCoin;
     amount: number;
+    coinAmount: number;
     status: DepositStatus;
     hasPaid: boolean;
     details: Map<string, DepositDetailMessage[]>;
@@ -37,6 +38,7 @@ const depositRequestSchema = new Schema<DepositRequestDocument>(
         user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         coin: { type: String, enum: Object.values(TransactionCoin), required: true },
         amount: { type: Number, required: true },
+        coinAmount: { type: Number, required: true },
         status: {
             type: String,
             enum: Object.values(DepositStatus),

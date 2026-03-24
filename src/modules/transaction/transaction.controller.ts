@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import axios from 'axios';
 
 // Services
-import { createNewTransaction, deleteTransaction, getCoinTransactions, getDashboardValues, getTransactionById, getTransactions, getTransactionsWithTypes, getUserBalanceByCoin, getUserTransactions, patchTransaction, updateTransaction } from './transaction.service';
+import { createNewTransaction, deleteTransaction, getCoinTransactions, getDashboardValues, getPrices, getTransactionById, getTransactions, getTransactionsWithTypes, getUserBalanceByCoin, getUserTransactions, patchTransaction, updateAllTransactionCoinAmounts, updateTransaction } from './transaction.service';
 import { findUserById } from '../user/user.service';
 import { findAdminById } from '../admin/admin.service';
 import { getUserReferrer, updateReferral } from '../referral/referral.services';
@@ -28,10 +28,7 @@ import deposit from '../../emails/UserMails/deposit';
 import generalTemplate from '../../emails/AdminMails/general';
 
 // Constants
-const cache = new Map();
-const CACHE_KEY = 'prices';
-const CACHE_TTL = 2 * 60 * 1000;
-const coingeckoURL = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`;
+export const coingeckoURL = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`;
 
 // Create a new transaction
 export const createNewTransactionHandler = async (request: FastifyRequest<{ Body: CreateTransactionInput }>, reply: FastifyReply) => {
@@ -70,6 +67,7 @@ export const createNewTransactionHandler = async (request: FastifyRequest<{ Body
       name: user.userName,
       coin: newTransaction.coin,
       amount: newTransaction.amount,
+      coinAmount: newTransaction.coinAmount,
       walletAddress: formatAddress(newTransaction.walletAddress),
       date: formatNowUtc(),
       status: 'pending',
@@ -88,6 +86,7 @@ export const createNewTransactionHandler = async (request: FastifyRequest<{ Body
       coin: newTransaction.coin,
       hash: newTransaction.transactionHash,
       amount: formatCurrency(newTransaction.amount),
+      coinAmount: newTransaction.coinAmount,
       date: formatNowUtc(),
       status: newTransaction.status
     });
@@ -114,26 +113,9 @@ export const createNewTransactionHandler = async (request: FastifyRequest<{ Body
 // Fetch Prices
 export const fetchPricesHandler = async (_: FastifyRequest, reply: FastifyReply) => {
 
-  const now = Date.now();
-  const cached = cache.get(CACHE_KEY);
-
-  if (cached && now - cached.timestamp < CACHE_TTL) return sendResponse(reply, 200, true, 'Coins prices were fetched successfully (from cache)', cached.data)
-
-  try {
-    const { data } = await axios.get(coingeckoURL, {
-      headers: {
-        Accept: 'application/json',
-        'x-cg-demo-api-key': COINGECKO_API_KEY,
-      },
-    });
-
-    cache.set(CACHE_KEY, { data, timestamp: now, });
-
-    return sendResponse(reply, 200, true, 'Coins prices were fetched successfully', data);
-  } catch (error) {
-    console.log('Failed to fetch prices:', error);
-    return sendResponse(reply, 500, false, 'Failed to fetch coin prices. Please try again later.');
-  }
+  // Fetch Prices and return
+  const data = await getPrices();
+  return sendResponse(reply, 200, true, 'Coins prices fetched successfully', data);
 };
 
 // Fetch the prices of a coin
@@ -272,13 +254,20 @@ export const patchTransactionHandler = async (request: FastifyRequest<{ Body: Pa
   return sendResponse(reply, 200, true, "Your transaction was updated successfully.")
 }
 
+// Update the coin amount
+export const updateCoinAmountsHandler = async (_: FastifyRequest, reply: FastifyReply) => {
+
+  const result = await updateAllTransactionCoinAmounts();
+  return sendResponse(reply, 200, true, "All transactions coin amount was updated successfully", result)
+};
+
 
 // Administrative Endpoint
 
 // Create a new transaction
 export const createUserTransactionHandler = async (request: FastifyRequest<{ Body: CreateUserTransactionInput }>, reply: FastifyReply) => {
 
-  const { user, coin, walletAddress, transactionType, amount, status } = request.body;
+  const { user, coin, coinAmount, walletAddress, transactionType, amount, status } = request.body;
   const decodedAdmin = request.user;
 
   // Fetch admin and make sure he is a super admin
@@ -299,6 +288,7 @@ export const createUserTransactionHandler = async (request: FastifyRequest<{ Bod
       name: userDetails.userName,
       coin,
       amount,
+      coinAmount,
       walletAddress: formatAddress(newTransaction.walletAddress),
       date: formatNowUtc(),
       status,
@@ -317,6 +307,7 @@ export const createUserTransactionHandler = async (request: FastifyRequest<{ Bod
       coin,
       hash: transactionHash,
       amount: formatCurrency(amount),
+      coinAmount,
       date: formatNowUtc(),
       status: newTransaction.status
     });
@@ -380,8 +371,18 @@ export const updateTransactionHandler = async (request: FastifyRequest<{ Body: U
     const referredBy = await getUserReferrer(transaction.user.toString());
     if (referredBy) {
       const amount = transaction.amount * (REFERRAL_PERCENT / 100);
+      const coinAmount = transaction.coinAmount * (REFERRAL_PERCENT / 100);
+
       const referralData = { referralId: referredBy._id as string, rewardClaimed: amount };
-      const bonusData = { user: referredBy._id as string, coin: transaction.coin, transactionType: TransactionType.REFERRAL, amount: transaction.amount, status: "successful", transactionHash: generateTransactionHash() };
+      const bonusData = {
+        user: referredBy._id as string,
+        coin: transaction.coin,
+        transactionType: TransactionType.REFERRAL,
+        amount,
+        coinAmount,
+        status: "successful",
+        transactionHash: generateTransactionHash()
+      };
 
       // Create both documents
       await createNewTransaction(bonusData);
@@ -392,7 +393,7 @@ export const updateTransactionHandler = async (request: FastifyRequest<{ Body: U
         type: 'transaction',
         subType: "referral",
         title: `You’ve earned a referral reward!`,
-        message: ` Reward: +${amount} ${transaction.coin} — check your referral page and USDT wallet`,
+        message: ` Reward: +${amount} ${transaction.coin} — check your referral page and dashboard for more details`,
       });
     }
   }
@@ -404,6 +405,7 @@ export const updateTransactionHandler = async (request: FastifyRequest<{ Body: U
       coin: transaction.coin,
       hash: transaction.transactionHash,
       amount: formatCurrency(transaction.amount),
+      coinAmount: transaction.coinAmount,
       date: formatNowUtc(),
       status: request.body.status,
     });
@@ -419,6 +421,7 @@ export const updateTransactionHandler = async (request: FastifyRequest<{ Body: U
       name: user.userName,
       coin: transaction.coin,
       amount: transaction.amount,
+      coinAmount: transaction.coinAmount,
       walletAddress: formatAddress(transaction.walletAddress),
       date: formatNowUtc(),
       status: request.body.status,

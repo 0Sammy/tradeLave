@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
 //Handlers
-import { createNewTransactionHandler, createUserTransactionHandler, deleteUserTransactionHandler, fetchAllTransactionsHandler, fetchAllUserTransactionsHandler, fetchCoinDetailsHandler, fetchPricesHandler, fetchTransactionHandler, fetchUserTransactionHandler, getCoinTransactionsHandler, getDashboardValuesHandler, getTypeTransactionHandler, getUserBalanceHandler, patchTransactionHandler, updateTransactionHandler } from './transaction.controller';
+import { createNewTransactionHandler, createUserTransactionHandler, deleteUserTransactionHandler, fetchAllTransactionsHandler, fetchAllUserTransactionsHandler, fetchCoinDetailsHandler, fetchPricesHandler, fetchTransactionHandler, fetchUserTransactionHandler, getCoinTransactionsHandler, getDashboardValuesHandler, getTypeTransactionHandler, getUserBalanceHandler, patchTransactionHandler, updateCoinAmountsHandler, updateTransactionHandler } from './transaction.controller';
 
 //Schemas
 import { CreateTransactionInput, CreateUserTransactionInput, FetchTransactionInput, FetchUserBalanceInput, GetCoinDetailsInput, GetTransactionsWithTypeInput, GetTransactionWithTypesInput, GetUserTransactionInput, PatchTransactionInput, transactionRef, UpdateTransactionInput } from './transaction.schema';
@@ -137,6 +137,15 @@ export default async function transactionRoutes(app: FastifyInstance) {
   },
     patchTransactionHandler
   )
+
+  // Update coin amount
+  app.get('/coinAmount', {
+    schema: {
+      tags: ['Transactions', 'Users'],
+    },
+  },
+    updateCoinAmountsHandler
+  );
 
 
   // Admin Routes
