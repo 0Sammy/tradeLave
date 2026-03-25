@@ -11,6 +11,7 @@ export enum DepositStatus {
 export type DepositDetailMessage = {
     message: string | number;
     at: Date;
+    file?: string;
 };
 
 export type DepositRequestDocument = Document & {
@@ -28,7 +29,8 @@ export type DepositRequestDocument = Document & {
 const depositDetailMessageSchema = new Schema<DepositDetailMessage>(
     {
         message: { type: Schema.Types.Mixed, required: true },
-        at: { type: Date, default: Date.now }
+        at: { type: Date, default: Date.now },
+        file: { type: String },
     },
     { _id: false }
 );

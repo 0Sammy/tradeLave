@@ -6,7 +6,7 @@ import { TransactionCoin } from '../transaction/transaction.model';
 import { DepositStatus } from './depositRequest.model';
 
 
-const roleEnum = z.enum(['user', 'admin']);
+export const roleEnum = z.enum(['user', 'admin']);
 const createDepositRequestSchema = z.object({
     coin: z.nativeEnum(TransactionCoin),
     amount: z.number().nonnegative(),
@@ -51,7 +51,8 @@ const editUserDepositRequestSchema = z.object({
     hasPaid: z.boolean().optional(),
     details: z.object({
         role: roleEnum,
-        message: z.any()
+        message: z.any(),
+        file: z.string().url().optional(),
     }).optional(),
     createdAt: z.coerce.date().optional(),
 })

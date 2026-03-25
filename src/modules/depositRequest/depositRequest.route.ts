@@ -37,7 +37,6 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
         schema: {
             tags: ['DepositRequest', 'Users'],
             security: [{ bearerAuth: [] }],
-            body: depositRequestRef('editDepositRequestSchema'),
             response: {
                 404: generalRef('unavailableSchema'),
                 400: generalRef('badRequestSchema'),

@@ -19,7 +19,7 @@ const envSchema = z.object({
   AWS_BUCKET_REGION: z.string(),
   AWS_ACCESS_KEY: z.string(),
   AWS_SECRET_ACCESS_KEY: z.string(),
-  FILE_SIZE: z.number().default(100),
+  FILE_SIZE: z.number().default(50),
   COINGECKO_API_KEY: z.string(),
   RESEND_API: z.string(),
   REDIS_USERNAME: z.string(),

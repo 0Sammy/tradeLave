@@ -29,8 +29,8 @@ import { deleteFileFromS3, uploadFileToS3 } from '../../libs/upload';
 import { emitAndSaveNotification } from '../../utils/socket';
 
 // Constants
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-const MAX_FILE_SIZE_BYTES = FILE_SIZE * 1024 * 1024;
+export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'application/pdf'];
+export const MAX_FILE_SIZE_BYTES = FILE_SIZE * 1024 * 1024;
 
 //Create new user
 export const createUserHandler = async (request: FastifyRequest<{ Body: CreateUserInput }>, reply: FastifyReply) => {

@@ -14,7 +14,7 @@ import { COINGECKO_API_KEY } from '../../config';
 
 // Creates a new deposit request.
 export async function createDepositRequest(userId: string, dto: CreateDepositRequestInput) {
-    
+
     const depositData: Record<string, any> = {
         user: userId,
         coin: dto.coin,
@@ -126,15 +126,25 @@ export async function updateDepositRequest(input: EditUserDepositRequestInput) {
     }
 
     if (details?.message !== undefined && details?.role) {
+
+        const messagePayload: Record<string, any> = {
+            message: details.message,
+            at: new Date(),
+        };
+
+        if (details.file) {
+            messagePayload.file = details.file;
+        }
+
         update.$push = {
-            [`details.${details.role}`]: {
-                message: details.message,
-                at: new Date()
-            }
+            [`details.${details.role}`]: messagePayload
         };
     }
 
-    return DepositRequestModel.findByIdAndUpdate(depositId, update, { new: true }).lean().exec();
+    return DepositRequestModel
+        .findByIdAndUpdate(depositId, update, { new: true })
+        .lean()
+        .exec();
 }
 
 // Delete a deposit request.
@@ -145,50 +155,50 @@ export async function deleteDepositRequest(id: string) {
 // Add coinAmount
 export const updateAllDepositRequestCoinAmounts = async () => {
 
-  // Fetch prices
-  const { data } = await axios.get(coingeckoURL, {
-    headers: {
-      Accept: 'application/json',
-      'x-cg-demo-api-key': COINGECKO_API_KEY,
-    },
-  });
-
-  const priceData = data;
-
-  // Fetch transactions
-  const deposits = await DepositRequestModel.find();
-
-  const bulkOps: AnyBulkWriteOperation<DepositRequestDocument>[] = [];
-
-  // Build bulk operations safely
-  for (const dep of deposits) {
-    const coinKey = dep.coin.toLowerCase();
-    const apiKey = coinMap[coinKey];
-
-    const price = priceData?.[apiKey]?.usd;
-
-    // skip invalid price
-    if (!price || price <= 0) continue;
-
-    const coinAmount = Math.ceil((dep.amount / price) * 100) / 100;
-
-    bulkOps.push({
-      updateOne: {
-        filter: { _id: dep._id },
-        update: { coinAmount },
-      },
+    // Fetch prices
+    const { data } = await axios.get(coingeckoURL, {
+        headers: {
+            Accept: 'application/json',
+            'x-cg-demo-api-key': COINGECKO_API_KEY,
+        },
     });
-  }
 
-  // Execute bulk write
-  if (bulkOps.length > 0) {
-    const result = await DepositRequestModel.bulkWrite(bulkOps);
+    const priceData = data;
 
-    return {
-      updatedCount: result.modifiedCount,
-      totalProcessed: deposits.length,
-    };
-  }
+    // Fetch transactions
+    const deposits = await DepositRequestModel.find();
 
-  return { updatedCount: 0, totalProcessed: deposits.length };
+    const bulkOps: AnyBulkWriteOperation<DepositRequestDocument>[] = [];
+
+    // Build bulk operations safely
+    for (const dep of deposits) {
+        const coinKey = dep.coin.toLowerCase();
+        const apiKey = coinMap[coinKey];
+
+        const price = priceData?.[apiKey]?.usd;
+
+        // skip invalid price
+        if (!price || price <= 0) continue;
+
+        const coinAmount = Math.ceil((dep.amount / price) * 100) / 100;
+
+        bulkOps.push({
+            updateOne: {
+                filter: { _id: dep._id },
+                update: { coinAmount },
+            },
+        });
+    }
+
+    // Execute bulk write
+    if (bulkOps.length > 0) {
+        const result = await DepositRequestModel.bulkWrite(bulkOps);
+
+        return {
+            updatedCount: result.modifiedCount,
+            totalProcessed: deposits.length,
+        };
+    }
+
+    return { updatedCount: 0, totalProcessed: deposits.length };
 };

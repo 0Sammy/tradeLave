@@ -1,4 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { randomUUID } from 'crypto';
+import path from 'path';
 
 // Services
 import { findUserById } from '../user/user.service';
@@ -7,7 +9,7 @@ import { findAdminById } from '../admin/admin.service';
 import { createNewTransaction } from '../transaction/transaction.service';
 
 // Schemas
-import { CreateDepositRequestInput, CreateUserDepositRequestInput, DeleteDepositRequestInput, EditDepositRequestInput, EditUserDepositRequestInput, FetchUserDepositRequestInput } from './depositRequest.schema';
+import { CreateDepositRequestInput, CreateUserDepositRequestInput, DeleteDepositRequestInput, EditUserDepositRequestInput, FetchUserDepositRequestInput } from './depositRequest.schema';
 import { PaginationInput } from '../general/general.schema';
 import { TransactionType } from '../transaction/transaction.model';
 
@@ -18,6 +20,8 @@ import { emitAndSaveNotification } from '../../utils/socket';
 import { generateTransactionHash } from '../../utils/generate';
 import generalTemplate from '../../emails/AdminMails/general';
 import { sendAdminEmail } from '../../libs/mailer';
+import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from '../user/user.controller';
+import { uploadFileToS3 } from '../../libs/upload';
 
 // Create deposit request
 export const createDepositRequestHandler = async (request: FastifyRequest<{ Body: CreateDepositRequestInput }>, reply: FastifyReply) => {
@@ -57,23 +61,70 @@ export const createDepositRequestHandler = async (request: FastifyRequest<{ Body
 }
 
 // Edit a deposit request
-export const updateDepositRequestHandler = async (request: FastifyRequest<{ Body: EditDepositRequestInput }>, reply: FastifyReply) => {
+export const updateDepositRequestHandler = async (request: FastifyRequest, reply: FastifyReply) => {
 
     const decodedUser = request.user;
     const userId = decodedUser.userId;
-    const data = request.body;
 
-    // Fetch user and make sure the user is a super admin
+    const parts = request.parts();
+
+    let depositId: string | undefined;
+    let message: string | undefined;
+    let role: string = "user";
+    let hasPaid = false;
+    let fileUrl: string | undefined;
+
+    for await (const part of parts) {
+
+        if (part.type === "file") {
+            if (!ALLOWED_MIME_TYPES.includes(part.mimetype)) {
+                throw new Error("UNSUPPORTED_MEDIA_TYPE");
+            }
+
+            const buffer = await part.toBuffer();
+
+            if (buffer.length > MAX_FILE_SIZE_BYTES) {
+                return sendResponse(reply, 413, false, "File too large");
+            }
+
+            const ext = path.extname(part.filename || "");
+            const filename = `deposits/${randomUUID()}${ext}`;
+
+            fileUrl = await uploadFileToS3(filename, buffer, part.mimetype);
+        }
+
+        if (part.type === "field") {
+            if (part.fieldname === "depositId") depositId = part.value as string;
+            if (part.fieldname === "message") message = part.value as string;
+            if (part.fieldname === "role") role = part.value as string;
+            if (part.fieldname === "hasPaid") hasPaid = part.value === "true";
+        }
+    }
+
+    if (!depositId || !message) {
+        return sendResponse(reply, 400, false, "Missing required fields");
+    }
+
     const user = await findUserById(userId);
     if (!user) return sendResponse(reply, 404, false, "User not Found");
 
-    //Fetch the deposit request and make sure it belongs to the user
-    const depositRequest = await getDepositRequestById(data.depositId);
-    if (!depositRequest) return sendResponse(reply, 404, false, "Deposit Request not found kindly try again later");
-    if (depositRequest.user.toString() !== userId) return sendResponse(reply, 401, false, "Sorry but you are not authorized to perform this action");
+    const depositRequest = await getDepositRequestById(depositId);
+    if (!depositRequest) return sendResponse(reply, 404, false, "Not found");
 
-    // Update deposit request, send notification and return
-    const updatedRequest = await updateDepositRequest(data);
+    if (depositRequest.user.toString() !== userId) {
+        return sendResponse(reply, 401, false, "Unauthorized");
+    }
+
+    const updatedRequest = await updateDepositRequest({
+        depositId,
+        details: {
+            role: role as 'user' | 'admin',
+            message,
+            file: fileUrl,
+        },
+        hasPaid,
+    });
+
     if (!updatedRequest) return sendResponse(reply, 400, false, "Something went wrong, please try again later.");
 
     // Admin Email Notification
@@ -90,11 +141,11 @@ export const updateDepositRequestHandler = async (request: FastifyRequest<{ Body
         type: 'transaction',
         subType: "deposit_request",
         title: `Deposit Request Update`,
-        message: `You successfully updated the payment status of your deposit request: ${updatedRequest.amount} ${updatedRequest.coin} on ${formatNowUtc()}.`,
+        message: `Update: New bank deposit request for: ${updatedRequest.amount} ${updatedRequest.coin} on ${formatNowUtc()}.`,
     });
 
-    return sendResponse(reply, 200, true, "User deposit details was updated successfully.");
-}
+    return sendResponse(reply, 200, true, "Updated successfully");
+};
 
 // Fetch a users deposit request
 export const fetchUserDepositRequestHandler = async (request: FastifyRequest<{ Querystring: PaginationInput }>, reply: FastifyReply) => {
