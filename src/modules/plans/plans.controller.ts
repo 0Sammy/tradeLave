@@ -15,14 +15,7 @@ import { sendResponse } from '../../utils/response.utils';
 // Create a new plan
 export const createPlanHandler = async (request: FastifyRequest<{ Body: CreatePlanInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const data = request.body;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Create plan and return
     await createPlan(data);
@@ -32,14 +25,7 @@ export const createPlanHandler = async (request: FastifyRequest<{ Body: CreatePl
 // Edit an existing plan
 export const updatePlanHandler = async (request: FastifyRequest<{ Body: UpdatePlanInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const data = request.body;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Make sure the plan exists
     const plan = await getPlanById(data.planId);
@@ -53,7 +39,7 @@ export const updatePlanHandler = async (request: FastifyRequest<{ Body: UpdatePl
 // Fetch all plans
 export const getAllPlansHandler = async (request: FastifyRequest, reply: FastifyReply) => {
 
-    // Make sure the user is actually a user
+    // Make sure the user is actually a user or an admin
     const decodedUser = request.user;
     const id = decodedUser.userId;
 
@@ -69,14 +55,7 @@ export const getAllPlansHandler = async (request: FastifyRequest, reply: Fastify
 // Delete plan
 export const deletePlanHandler = async (request: FastifyRequest<{ Params: DeletePlanInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const planId = request.params.planId;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Make sure the plan exists
     const plan = await getPlanById(planId);

@@ -4,7 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { createInvestmentHandler, getAllInvestmentsHandler, getUserInvestmentsHandler, updateInvestmentHandler } from './investment.controller';
 
 // Middlewares
-import { hasPermission } from '../../middlewares/auth';
+import { isAdmin, isSuperAdmin } from './../../middlewares/role';
 
 // Schemas
 import { CreateInvestmentInput, FetchUserInvestmentsInput, investmentRef, UpdateInvestmentStatusInput } from './investment.schema';
@@ -49,7 +49,7 @@ export default async function investmentRoutes(app: FastifyInstance) {
 
     // Get a user investments
     app.get<{ Params: FetchUserInvestmentsInput, Querystring: PaginationInput }>("/getUser/:userId", {
-        preHandler: app.authenticate,
+        preHandler: [app.authenticate, isAdmin],
         schema: {
             tags: ['Investments', 'Admins'],
             security: [{ bearerAuth: [] }],
@@ -64,7 +64,7 @@ export default async function investmentRoutes(app: FastifyInstance) {
 
     // Get all users investments
     app.get<{ Querystring: PaginationInput }>("/getAll", {
-        preHandler: app.authenticate,
+        preHandler: [app.authenticate, isAdmin],
         schema: {
             tags: ['Investments', 'Admins'],
             security: [{ bearerAuth: [] }],
@@ -80,7 +80,7 @@ export default async function investmentRoutes(app: FastifyInstance) {
     app.patch<{ Body: UpdateInvestmentStatusInput }>("/update", {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"]),
+            isSuperAdmin,
         ],
         schema: {
             tags: ['Investments', 'Admins'],

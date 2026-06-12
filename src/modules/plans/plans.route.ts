@@ -4,7 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { createPlanHandler, deletePlanHandler, getAllPlansHandler, updatePlanHandler } from './plans.controller';
 
 // Middlewares
-import { hasPermission } from '../../middlewares/auth';
+import { isSuperAdmin } from '../../middlewares/role';
 
 // Schemas
 import { CreatePlanInput, DeletePlanInput, planRef, UpdatePlanInput } from './plans.schema';
@@ -19,7 +19,7 @@ export default async function plansRoutes(app: FastifyInstance) {
         {
             preHandler: [
                 app.authenticate,
-                hasPermission(["super_admin"])
+                isSuperAdmin
             ],
             schema: {
                 tags: ['Plans'],
@@ -39,7 +39,7 @@ export default async function plansRoutes(app: FastifyInstance) {
     app.patch<{ Body: UpdatePlanInput }>('/update', {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"])
+            isSuperAdmin
         ],
         schema: {
             tags: ['Plans'],
@@ -71,7 +71,7 @@ export default async function plansRoutes(app: FastifyInstance) {
     app.delete<{ Params: DeletePlanInput }>('/delete/:planId', {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"])
+            isSuperAdmin
         ],
         schema: {
             tags: ['Plans'],

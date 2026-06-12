@@ -146,7 +146,7 @@ export const sendPasswordReset = async (request: FastifyRequest<{ Body: Password
 
   //Fetch user by email, throw an error if it doesn't exist, or if the user hasn't verified their account
   const user = await findUserByEmail(email.toLowerCase());
-  if (!user) return sendResponse(reply, 400, false, 'Incorrect Email or Password');
+  if (!user) return sendResponse(reply, 400, false, 'Incorrect Email');
   if (!user.isVerified) return sendResponse(reply, 403, false, 'Please verify your account before proceeding.');
 
   // Generate 4 Random Digits and Save

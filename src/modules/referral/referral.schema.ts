@@ -15,7 +15,7 @@ const updateReferralSchema = z.object({
     referralId: z.string({
         required_error: 'Referral ID is required',
     }),
-    rewardClaimed: z.number().int().nonnegative(),
+    rewardClaimed: z.number().nonnegative(),
 });
 
 const fetchReferralSchema = z.object({

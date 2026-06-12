@@ -1,18 +1,21 @@
 import { FastifyInstance } from 'fastify';
 
-//Handlers
+// Handlers
 import { createUserHandler, editUserHandler, fetchAllUsersHandler, fetchCurrentUserHandler, fetchUserHandler, kycUploadHandler, resendVerification, updateProfilePictureHandler, updateUserHandler, verifyUserHandler } from './user.controller';
 import { getBalanceHandler } from '../transaction/transaction.controller';
 
-//Schemas
+// Middlewares
+import { isSuperAdmin, isAdmin } from '../../middlewares/role';
+
+// Schemas
 import { EditUserInput, FetchUserInput, userRef, VerifyUserInput } from './user.schema';
 import { generalRef, PaginationInput } from '../general/general.schema';
 import { transactionRef } from '../transaction/transaction.schema';
 
-//User Routes
+// User Routes
 export default async function userRoutes(app: FastifyInstance) {
 
-  //Create new user
+  // Create new user
   app.post('/create',
     {
       schema: {
@@ -28,7 +31,7 @@ export default async function userRoutes(app: FastifyInstance) {
     createUserHandler
   );
 
-  //Verify new user
+  // Verify new user
   app.post<{ Body: VerifyUserInput }>('/verify',
     {
       preHandler: app.authenticate,
@@ -46,7 +49,7 @@ export default async function userRoutes(app: FastifyInstance) {
     verifyUserHandler
   );
 
-  //Resend Verification
+  // Resend Verification
   app.get('/resend',
     {
       preHandler: app.authenticate,
@@ -63,7 +66,7 @@ export default async function userRoutes(app: FastifyInstance) {
     resendVerification
   );
 
-  //KYC
+  // KYC
   app.patch('/kyc',
     {
       preHandler: app.authenticate,
@@ -81,7 +84,7 @@ export default async function userRoutes(app: FastifyInstance) {
     kycUploadHandler
   );
 
-  //Update Profile Picture
+  // Update Profile Picture
   app.patch('/updateProfilePicture',
     {
       preHandler: app.authenticate,
@@ -99,7 +102,7 @@ export default async function userRoutes(app: FastifyInstance) {
     updateProfilePictureHandler
   );
 
-  //Update User Details
+  // Update User Details
   app.patch<{ Body: EditUserInput }>('/update',
     {
       preHandler: app.authenticate,
@@ -115,7 +118,7 @@ export default async function userRoutes(app: FastifyInstance) {
     updateUserHandler
   );
 
-  //Fetch User Balance
+  // Fetch User Balance
   app.get('/getBalance',
     {
       preHandler: app.authenticate,
@@ -131,7 +134,7 @@ export default async function userRoutes(app: FastifyInstance) {
     getBalanceHandler
   );
 
-  //Fetch Current Logged In User
+  // Fetch Current Logged In User
   app.get('/currentUser',
     {
       preHandler: app.authenticate,
@@ -147,12 +150,13 @@ export default async function userRoutes(app: FastifyInstance) {
     fetchCurrentUserHandler
   );
 
-  //Admin Endpoint
 
-  //Edit user details
+  // Admin Endpoint
+
+  // Edit user details
   app.patch<{ Body: EditUserInput }>('/adminUpdate',
     {
-      preHandler: app.authenticate,
+      preHandler: [app.authenticate, isSuperAdmin],
       schema: {
         tags: ['Admins'],
         security: [{ bearerAuth: [] }],
@@ -167,10 +171,10 @@ export default async function userRoutes(app: FastifyInstance) {
     editUserHandler
   );
 
-  //Fetch User
+  // Fetch User
   app.get<{ Params: FetchUserInput }>('/getUser/:value',
     {
-      preHandler: app.authenticate,
+      preHandler: [app.authenticate, isAdmin],
       schema: {
         tags: ['Admins'],
         security: [{ bearerAuth: [] }],
@@ -187,7 +191,7 @@ export default async function userRoutes(app: FastifyInstance) {
   //Fetch all users
   app.get<{ Querystring: PaginationInput }>('/allUsers',
     {
-      preHandler: app.authenticate,
+      preHandler: [app.authenticate, isAdmin],
       schema: {
         tags: ['Users', 'Admins'],
         security: [{ bearerAuth: [] }],

@@ -4,7 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { deleteUserReferral, getAllReferrersHandler, getUserReferralHandler } from './referral.controller';
 
 // Middlewares
-import { hasPermission } from '../../middlewares/auth';
+import { isAdmin, isSuperAdmin } from '../../middlewares/role';
 
 // Schemas
 import { generalRef, PaginationInput } from '../general/general.schema';
@@ -31,7 +31,7 @@ export default async function referralRoutes(app: FastifyInstance) {
 
     // Get all Referrals
     app.get<{ Querystring: PaginationInput }>("/getAll", {
-        preHandler: app.authenticate,
+        preHandler: [app.authenticate, isAdmin],
         schema: {
             tags: ['Referrals', "Admins"],
             security: [{ bearerAuth: [] }],
@@ -48,7 +48,7 @@ export default async function referralRoutes(app: FastifyInstance) {
     app.delete<{ Params: DeleteReferralInput }>('/delete/:referralId', {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"])
+            isSuperAdmin
         ],
         schema: {
             tags: ['Referrals', "Admins"],

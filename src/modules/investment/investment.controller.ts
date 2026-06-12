@@ -1,7 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 // Services
-import { findAdminById } from '../admin/admin.service';
 import { findUserById } from './../user/user.service';
 import { getPlanById } from '../plans/plans.service';
 import { createInvestment, findInvestments, getAllInvestments, getInvestmentById, getUserInvestments, updateInvestmentStatus } from './investment.services';
@@ -114,14 +113,8 @@ export const getUserInvestmentsHandler = async (request: FastifyRequest<{ Querys
 // Fetch a user Investments
 export const getUserInvestmentHandler = async (request: FastifyRequest<{ Params: FetchUserInvestmentsInput, Querystring: PaginationInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const { page = '1', limit = '50' } = request.query;
     const userId = request.params.userId;
-
-    // Fetch admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
 
     // Fetch user investments and return
     const investments = await getUserInvestments(userId, Number(page), Number(limit));
@@ -131,13 +124,7 @@ export const getUserInvestmentHandler = async (request: FastifyRequest<{ Params:
 // Fetch all user investments
 export const getAllInvestmentsHandler = async (request: FastifyRequest<{ Querystring: PaginationInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const { page = '1', limit = '50' } = request.query;
-
-    // Fetch admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
 
     // Fetch all investments and return
     const investments = await getAllInvestments({ page: Number(page), limit: Number(limit) });
@@ -147,14 +134,7 @@ export const getAllInvestmentsHandler = async (request: FastifyRequest<{ Queryst
 // Update an investment
 export const updateInvestmentHandler = async (request: FastifyRequest<{ Body: UpdateInvestmentStatusInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const data = request.body;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Fetch investment and make sure it exists
     const investment = await getInvestmentById(data.investmentId);

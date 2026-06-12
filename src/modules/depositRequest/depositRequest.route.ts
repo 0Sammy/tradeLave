@@ -4,7 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { createDepositRequestHandler, createUserDepositRequestHandler, deleteDepositRequestHandler, deleteUserDepositRequestHandler, fetchAllUserDepositsRequestHandler, fetchUserDepositRequestHandler, getUserDepositRequestHandler, updateDepositRequestHandler, updateUserDepositRequestHandler } from './depositRequest.controller';
 
 // Middlewares
-import { hasPermission } from '../../middlewares/auth';
+import { isAdmin, isSuperAdmin } from './../../middlewares/role';
 
 // Schemas
 import { CreateDepositRequestInput, DeleteDepositRequestInput, depositRequestRef, CreateUserDepositRequestInput, FetchUserDepositRequestInput, EditUserDepositRequestInput, EditDepositRequestInput } from './depositRequest.schema';
@@ -85,7 +85,7 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
     app.post<{ Body: CreateUserDepositRequestInput }>("/createRequest", {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"])
+            isSuperAdmin
         ],
         schema: {
             tags: ['DepositRequest', 'Admins'],
@@ -101,7 +101,7 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
 
     // Fetch a users deposit request
     app.get<{ Params: FetchUserDepositRequestInput, Querystring: PaginationInput }>("/getUser/:userId", {
-        preHandler: app.authenticate,
+        preHandler: [app.authenticate, isAdmin],
         schema: {
             tags: ['DepositRequest', 'Admins'],
             security: [{ bearerAuth: [] }],
@@ -116,7 +116,7 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
 
     // Fetch all users deposit request
     app.get<{ Querystring: PaginationInput }>("/getAll", {
-        preHandler: app.authenticate,
+        preHandler: [app.authenticate, isAdmin],
         schema: {
             tags: ['DepositRequest', 'Admins'],
             security: [{ bearerAuth: [] }],
@@ -132,7 +132,7 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
     app.patch<{ Body: EditUserDepositRequestInput }>("/updateRequest", {
         preHandler: [
             app.authenticate,
-            hasPermission(["super_admin"])
+            isSuperAdmin
         ],
         schema: {
             tags: ['DepositRequest', 'Admins'],
@@ -151,7 +151,7 @@ export default async function depositRequestRoutes(app: FastifyInstance) {
         {
             preHandler: [
                 app.authenticate,
-                hasPermission(["super_admin"])
+                isSuperAdmin
             ],
             schema: {
                 tags: ['DepositRequest', 'Admins'],

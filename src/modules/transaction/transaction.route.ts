@@ -1,9 +1,12 @@
 import { FastifyInstance } from 'fastify';
 
-//Handlers
+// Handlers
 import { createNewTransactionHandler, createUserTransactionHandler, deleteUserTransactionHandler, fetchAllTransactionsHandler, fetchAllUserTransactionsHandler, fetchCoinDetailsHandler, fetchPricesHandler, fetchTransactionHandler, fetchUserTransactionHandler, getCoinTransactionsHandler, getDashboardValuesHandler, getTypeTransactionHandler, getUserBalanceHandler, patchTransactionHandler, updateTransactionHandler } from './transaction.controller';
 
-//Schemas
+// Middlewares
+import { isAdmin, isSuperAdmin } from '../../middlewares/role';
+
+// Schemas
 import { CreateTransactionInput, CreateUserTransactionInput, FetchTransactionInput, FetchUserBalanceInput, GetCoinDetailsInput, GetTransactionsWithTypeInput, GetTransactionWithTypesInput, GetUserTransactionInput, PatchTransactionInput, transactionRef, UpdateTransactionInput } from './transaction.schema';
 import { generalRef, PaginationInput } from '../general/general.schema';
 
@@ -143,7 +146,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
 
   // Create a new transaction for a user
   app.post<{ Body: CreateUserTransactionInput }>('/createUserTransaction', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isSuperAdmin],
     schema: {
       tags: ['Transactions', 'Admins'],
       security: [{ bearerAuth: [] }],
@@ -159,7 +162,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
 
   // Fetch all transactions
   app.get<{ Params: GetTransactionsWithTypeInput; Querystring: PaginationInput }>('/getAllTransactions/:transactionType', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isAdmin],
     schema: {
       tags: ['Transactions', 'Admins'],
       security: [{ bearerAuth: [] }],
@@ -172,7 +175,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
 
   // Update Transactions
   app.patch<{ Body: UpdateTransactionInput }>('/updateTransaction', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isSuperAdmin],
     schema: {
       tags: ['Transactions', 'Admins'],
       security: [{ bearerAuth: [] }],
@@ -190,7 +193,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
   // Fetch User Transactions
   app.post<{ Body: GetUserTransactionInput; Querystring: PaginationInput }>('/getUserTransactions',
     {
-      preHandler: app.authenticate,
+      preHandler: [app.authenticate, isAdmin],
       schema: {
         tags: ['Transactions', 'Admins'],
         security: [{ bearerAuth: [] }],
@@ -206,7 +209,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
 
   // Get a User Balance
   app.post<{ Params: FetchUserBalanceInput }>('/getUserBalance/:userId', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isAdmin],
     schema: {
       tags: ['Transactions', 'Admins'],
       security: [{ bearerAuth: [] }],
@@ -222,7 +225,7 @@ export default async function transactionRoutes(app: FastifyInstance) {
 
   // Delete a transaction
   app.delete<{ Params: FetchTransactionInput }>('/delete/:transactionId', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isSuperAdmin],
     schema: {
       tags: ['Transactions', 'Admins'],
       security: [{ bearerAuth: [] }],

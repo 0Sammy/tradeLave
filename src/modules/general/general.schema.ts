@@ -7,7 +7,7 @@ export const responseCore = {
   message: z.string(),
 };
 
-const paginationSchema = z.object({
+export const paginationSchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
 });

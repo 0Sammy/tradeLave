@@ -9,7 +9,7 @@ import { responseCore } from '../general/general.schema';
 const transactionCore = z.object({
   coin: z.nativeEnum(TransactionCoin, { required_error: 'Coin is required' }),
   transactionType: z.nativeEnum(TransactionType, { required_error: 'Transaction type is required' }),
-  amount: z.number({ required_error: 'Amount is required' }).int().min(1),
+  amount: z.number({ required_error: 'Amount is required' }).min(1),
   coinAmount: z.number({ required_error: 'Coin Equivalent is required' }).nonnegative(),
   network: z.string().optional(),
   transactionHash: z.string().optional(),

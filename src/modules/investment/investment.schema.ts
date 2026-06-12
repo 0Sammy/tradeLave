@@ -12,7 +12,7 @@ const investmentCore = z.object({
     user: z.string().optional(),
     coin: z.nativeEnum(TransactionCoin),
     plan: z.string({ required_error: "Plan is required" }),
-    amount: z.number().int().min(INVESTMENT_MINIMUM),
+    amount: z.number().min(INVESTMENT_MINIMUM, {message: `The Minimum amount is ${INVESTMENT_MINIMUM}`}),
     rate: z.number({ message: "Rate must be a non negative number"}).nonnegative(),
 });
 

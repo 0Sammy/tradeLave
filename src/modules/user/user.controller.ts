@@ -5,7 +5,6 @@ import { randomUUID } from 'crypto';
 
 // Services
 import { createUser, fetchUser, fetchUsers, findUser, findUserByEmail, findUserById, updateUser, } from './user.service';
-import { findAdminById } from '../admin/admin.service';
 import { createSession } from '../auth/auth.service';
 import { getLocationFromIP } from '../auth/auth.controller';
 import { createReferral } from '../referral/referral.services';
@@ -32,7 +31,7 @@ import { emitAndSaveNotification } from '../../utils/socket';
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'application/pdf'];
 export const MAX_FILE_SIZE_BYTES = FILE_SIZE * 1024 * 1024;
 
-//Create new user
+// Create new user
 export const createUserHandler = async (request: FastifyRequest<{ Body: CreateUserInput }>, reply: FastifyReply) => {
 
   const { email, ip, device, referral } = request.body;
@@ -329,13 +328,6 @@ export const fetchCurrentUserHandler = async (request: FastifyRequest, reply: Fa
 // Edit any user details
 export const editUserHandler = async (request: FastifyRequest<{ Body: EditUserInput }>, reply: FastifyReply) => {
 
-  const decodedAdmin = request.user;
-
-  // Make sure admin exists and it is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
-  if (admin.role !== 'super_admin') return sendResponse(reply, 403, false, 'Sorry, you are not authorized enough to perform this action');
-
   // Make sure user exists
   if (!request.body.email) return sendResponse(reply, 400, false, "User Email not found");
   const user = await findUserByEmail(request.body.email);
@@ -374,13 +366,6 @@ export const editUserHandler = async (request: FastifyRequest<{ Body: EditUserIn
 export const fetchUserHandler = async (request: FastifyRequest<{ Params: FetchUserInput }>, reply: FastifyReply) => {
 
   const value = request.params.value;
-  const decodedAdmin = request.user;
-
-  // Fetch admin and make sure he is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
-
-  if (admin.role !== 'super_admin') return sendResponse(reply, 403, false, 'Sorry, you are not authorized enough to perform this action');
 
   const fetchedUser = await fetchUser(value);
   if (!fetchedUser) return sendResponse(reply, 404, false, 'Sorry, no user matched the entered credentials');
@@ -392,13 +377,9 @@ export const fetchUserHandler = async (request: FastifyRequest<{ Params: FetchUs
 export const fetchAllUsersHandler = async (request: FastifyRequest<{ Querystring: PaginationInput }>,
   reply: FastifyReply
 ) => {
+
   const page = parseInt(request.query.page ?? '1');
   const limit = parseInt(request.query.limit ?? '20');
-  const decodedAdmin = request.user;
-
-  //Fetch admin and make sure he is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
 
   const users = await fetchUsers(page, limit);
   return sendResponse(reply, 200, true, 'All users accounts was fetched successfully', users);

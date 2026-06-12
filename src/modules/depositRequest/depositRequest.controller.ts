@@ -5,7 +5,6 @@ import path from 'path';
 // Services
 import { findUserById } from '../user/user.service';
 import { adminCreateDepositRequest, createDepositRequest, deleteDepositRequest, getAllDepositRequests, getDepositRequestById, getPendingRequests, getUserDepositRequests, updateDepositRequest } from './depositRequest.services';
-import { findAdminById } from '../admin/admin.service';
 import { createNewTransaction } from '../transaction/transaction.service';
 
 // Schemas
@@ -201,15 +200,7 @@ export const deleteDepositRequestHandler = async (request: FastifyRequest<{ Para
 
 // Create deposit request
 export const createUserDepositRequestHandler = async (request: FastifyRequest<{ Body: CreateUserDepositRequestInput }>, reply: FastifyReply) => {
-
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const data = request.body;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Make sure the user exists
     const user = await findUserById(data.user);
@@ -224,14 +215,8 @@ export const createUserDepositRequestHandler = async (request: FastifyRequest<{ 
 export const getUserDepositRequestHandler = async (request: FastifyRequest<{ Params: FetchUserDepositRequestInput, Querystring: PaginationInput }>, reply: FastifyReply) => {
 
     const userId = request.params.userId;
-
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const { page = '1', limit = '50' } = request.query;
 
-    // Fetch admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
 
     // Make sure the user exists
     const user = await findUserById(userId);
@@ -245,13 +230,7 @@ export const getUserDepositRequestHandler = async (request: FastifyRequest<{ Par
 // Fetch all deposit requests
 export const fetchAllUserDepositsRequestHandler = async (request: FastifyRequest<{ Querystring: PaginationInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const { page = '1', limit = '50' } = request.query;
-
-    // Fetch admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
 
     // Fetch all deposit request and return
     const depositRequests = await getAllDepositRequests({ page: Number(page), limit: Number(limit) });
@@ -261,14 +240,7 @@ export const fetchAllUserDepositsRequestHandler = async (request: FastifyRequest
 // Update a deposit requests
 export const updateUserDepositRequestHandler = async (request: FastifyRequest<{ Body: EditUserDepositRequestInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
     const { status, ...data } = request.body;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
 
     // Fetch deposit request, make sure it exists
     const depositRequest = await getDepositRequestById(data.depositId);
@@ -314,16 +286,7 @@ export const updateUserDepositRequestHandler = async (request: FastifyRequest<{ 
 // Delete a deposit requests
 export const deleteUserDepositRequestHandler = async (request: FastifyRequest<{ Params: DeleteDepositRequestInput }>, reply: FastifyReply) => {
 
-    const decodedUser = request.user;
-    const adminId = decodedUser.userId;
-
-    // Fetch admin and make sure the user is a super admin
-    const admin = await findAdminById(adminId);
-    if (!admin) return sendResponse(reply, 404, false, "Admin not Found");
-    if (admin.role !== "super_admin") return sendResponse(reply, 401, false, "Unauthorized");
-
     const depositId = request.params.depositId;
-
 
     //Fetch the deposit request and make sure it belongs to the user
     const depositRequest = await getDepositRequestById(depositId);

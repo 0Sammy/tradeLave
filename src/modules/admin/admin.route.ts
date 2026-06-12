@@ -4,19 +4,20 @@ import { FastifyInstance } from 'fastify';
 import { createAdminHandler, fetchAdminsHandler, getAdminHandler, sampleAdminCreationHandler, updateAdminHandler } from './admin.controller';
 
 // Middleware
-import { hasPermission } from '../../middlewares/auth';
+import { isAdmin, isSuperAdmin } from '../../middlewares/role';
+
 
 // Schemas
 import { adminRef, CreateAdminInput, UpdateAdminInput } from './admin.schema';
 import { generalRef } from '../general/general.schema';
 
 export default async function adminRoutes(app: FastifyInstance) {
-  
-  //Create new admin
+
+  // Create new admin
   app.post<{ Body: CreateAdminInput }>('/create', {
     preHandler: [
       app.authenticate,
-      hasPermission(["super_admin"])
+      isSuperAdmin
     ],
     schema: {
       tags: ['Admins'],
@@ -33,7 +34,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     createAdminHandler
   );
 
-  //Create sample admin
+  // Create sample admin
   app.post<{ Body: CreateAdminInput }>(
     '/sampleCreate',
     {
@@ -51,9 +52,9 @@ export default async function adminRoutes(app: FastifyInstance) {
     sampleAdminCreationHandler
   );
 
-  //Get logged in admin details
+  // Get logged in admin details
   app.get('/getDetails', {
-    preHandler: app.authenticate,
+    preHandler: [app.authenticate, isAdmin],
     schema: {
       tags: ['Admins'],
       security: [{ bearerAuth: [] }],
@@ -66,11 +67,11 @@ export default async function adminRoutes(app: FastifyInstance) {
     getAdminHandler
   );
 
-  //Fetch admins
+  // Fetch admins
   app.get('/getAdmins', {
     preHandler: [
       app.authenticate,
-      hasPermission(["super_admin"])
+      isSuperAdmin
     ],
     schema: {
       tags: ['Admins'],
@@ -85,11 +86,11 @@ export default async function adminRoutes(app: FastifyInstance) {
     fetchAdminsHandler
   );
 
-  //Update admin
+  // Update admin
   app.patch<{ Body: UpdateAdminInput }>('/updateAdmin', {
     preHandler: [
       app.authenticate,
-      hasPermission(["super_admin"])
+      isSuperAdmin
     ],
     schema: {
       tags: ['Admins'],

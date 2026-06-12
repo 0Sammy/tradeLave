@@ -125,7 +125,7 @@ export function sanitize<T extends AnyObject>(input: T): Partial<T> {
   return result as Partial<T>;
 }
 
-//Format currency
+// Format currency
 export const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
         style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2,

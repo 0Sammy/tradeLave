@@ -28,6 +28,7 @@ const envSchema = z.object({
   REDIS_PORT: z.coerce.number(),
   REFERRAL_PERCENT: z.coerce.number(),
   INVESTMENT_MINIMUM: z.coerce.number(),
+  STOCKS_API: z.string(),
 });
 
 // Validate the environment variables
@@ -57,4 +58,5 @@ export const {
   REDIS_PORT,
   REFERRAL_PERCENT,
   INVESTMENT_MINIMUM,
+  STOCKS_API,
 } = parsedEnv;

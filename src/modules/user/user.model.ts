@@ -106,29 +106,24 @@ userSchema.virtual('decryptedPassword').get(function () {
 
 
 // Generate unique accountId before creation
-userSchema.pre('save', async function (next) {
-  if (!this.isNew || this.accountId) {
-    return next();
-  }
+userSchema.pre("save", async function () {
+	if (!this.isNew || this.accountId) return;
 
-  const MAX_ATTEMPTS = 10;
+	const MAX_ATTEMPTS = 10;
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const newAccountId = 'TL' + generateAccountId();
+	for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+		const newAccountId = "TL" + generateAccountId();
 
-    const exists = await UserModel.exists({ accountId: newAccountId });
+		const exists = await UserModel.exists({ accountId: newAccountId });
 
-    if (!exists) {
-      this.accountId = newAccountId;
-      return next();
-    }
-  }
+		if (!exists) {
+			this.accountId = newAccountId;
+			return;
+		}
+	}
 
-  return next(
-    new Error('Failed to generate a unique accountId after multiple attempts')
-  );
+	throw new Error("Failed to generate a unique accountId");
 });
-
 
 // Hashing of Password
 userSchema.pre('save', async function (next) {

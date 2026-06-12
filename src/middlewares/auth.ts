@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import redisClient from '../modules/redis/connect';
 
-//Utils
+// Utils
 import { sendResponse } from '../utils/response.utils';
 
 const SESSION_PREFIX = 'session:';
@@ -47,21 +47,3 @@ export async function authenticate(app: FastifyInstance) {
         }
     });
 }
-
-export const hasPermission = (requiredRoles: string[]) => {
-    return async function (request: FastifyRequest, reply: FastifyReply) {
-
-        const user = request.user;
-
-        //Return if there is no user
-        if (!user) return sendResponse(reply, 401, false, 'Unauthorized');
-
-        //Make sure the user is under required role
-        if (!requiredRoles.includes(user.role)) {
-            return sendResponse(reply, 403, false, "Forbidden: insufficient permissions");
-        }
-
-        // Allow the request to continue
-        return;
-    };
-};

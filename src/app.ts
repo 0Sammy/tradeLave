@@ -18,6 +18,8 @@ import { depositRequestSchemas } from './modules/depositRequest/depositRequest.s
 import { planSchemas } from './modules/plans/plans.schema';
 import { referralSchemas } from './modules/referral/referral.schema';
 import { investmentSchemas } from './modules/investment/investment.schema';
+import { stockSchemas } from './modules/stock/schema';
+import { settingsSchemas } from './modules/settings/schema';
 
 // Routes
 import userRoutes from './modules/user/user.route';
@@ -29,6 +31,8 @@ import depositRequestRoutes from './modules/depositRequest/depositRequest.route'
 import plansRoutes from './modules/plans/plans.route';
 import referralRoutes from './modules/referral/referral.routes';
 import investmentRoutes from './modules/investment/investment.routes';
+import stockRoutes from './modules/stock/route';
+import settingsRoutes from './modules/settings/route';
 
 //  Utils
 import { sendResponse } from './utils/response.utils';
@@ -76,7 +80,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   //Cors
   app.register(cors, corsOptions);
 
-  // Register JWT plugin
+  //Register JWT plugin
   app.register(fastifyJwt, {
     secret: JWT_SECRET,
     sign: { expiresIn: '7d' },
@@ -104,6 +108,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     ...planSchemas,
     ...referralSchemas,
     ...investmentSchemas,
+    ...stockSchemas,
+    ...settingsSchemas,
   ]) {
     app.addSchema(schema);
   }
@@ -117,6 +123,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   app.register(plansRoutes, { prefix: '/v1/api/plans' });
   app.register(referralRoutes, { prefix: '/v1/api/referrals' });
   app.register(investmentRoutes, { prefix: '/v1/api/investments' });
+  app.register(stockRoutes, { prefix: '/v1/api/stocks' });
+  app.register(settingsRoutes, { prefix: '/v1/api/settings' });
 
 
   // Register cron jobs

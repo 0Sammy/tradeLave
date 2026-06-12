@@ -32,7 +32,7 @@ export const createNewTransaction = async (input: newTransaction) => {
   return newTransaction;
 };
 
-
+//Get Prices
 export const getPrices = async () => {
   const now = Date.now();
   const cached = cache.get(CACHE_KEY);

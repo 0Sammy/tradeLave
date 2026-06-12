@@ -4,7 +4,6 @@ import axios from 'axios';
 // Services
 import { createNewTransaction, deleteTransaction, getCoinTransactions, getDashboardValues, getPrices, getTransactionById, getTransactions, getTransactionsWithTypes, getUserBalanceByCoin, getUserTransactions, patchTransaction, updateTransaction } from './transaction.service';
 import { findUserById } from '../user/user.service';
-import { findAdminById } from '../admin/admin.service';
 import { getUserReferrer, updateReferral } from '../referral/referral.services';
 
 // Schemas
@@ -262,12 +261,6 @@ export const patchTransactionHandler = async (request: FastifyRequest<{ Body: Pa
 export const createUserTransactionHandler = async (request: FastifyRequest<{ Body: CreateUserTransactionInput }>, reply: FastifyReply) => {
 
   const { user, coin, coinAmount, walletAddress, transactionType, amount, status } = request.body;
-  const decodedAdmin = request.user;
-
-  // Fetch admin and make sure he is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
-  if (admin.role !== 'super_admin') return sendResponse(reply, 403, false, 'Sorry, you are not authorized enough to perform this action');
 
   // Fetch user
   const userDetails = await findUserById(user);
@@ -342,12 +335,6 @@ export const fetchAllTransactionsHandler = async (request: FastifyRequest<{ Para
 export const updateTransactionHandler = async (request: FastifyRequest<{ Body: UpdateTransactionInput }>, reply: FastifyReply) => {
 
   const { status, transactionId } = request.body;
-  const decodedAdmin = request.user;
-
-  // Fetch admin and make sure he is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
-  if (admin.role !== 'super_admin') return sendResponse(reply, 403, false, 'Sorry, you are not authorized enough to perform this action');
 
   // Fetch Transaction and user
   const transaction = await getTransactionById(transactionId);
@@ -466,13 +453,7 @@ export const getUserBalanceHandler = async (request: FastifyRequest<{ Params: Fe
 // Delete a Transaction
 export const deleteUserTransactionHandler = async (request: FastifyRequest<{ Params: FetchTransactionInput }>, reply: FastifyReply) => {
 
-  const decodedAdmin = request.user;
   const transactionId = request.params.transactionId;
-
-  // Fetch admin and make sure he is a super admin
-  const admin = await findAdminById(decodedAdmin.userId);
-  if (!admin) return sendResponse(reply, 400, false, 'Sorry, but you are not authorized to perform this action');
-  if (admin.role !== 'super_admin') return sendResponse(reply, 403, false, 'Sorry, you are not authorized enough to perform this action');
 
   const deleted = await deleteTransaction(transactionId);
   return sendResponse(reply, 200, true, 'Transaction was deleted successfully', deleted);

@@ -4,7 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { deleteNotificationHandler, getNotificationsHandler, markNotificationReadHandler, sendNotificationHandler } from './notifications.controller';
 
 // Middlewares
-import { hasPermission } from '../../middlewares/auth';
+import { isSuperAdmin } from './../../middlewares/role';
 
 // Schemas
 import { CreateAdminNotificationInput, notificationRef, ReadNotificationInput } from './notifications.schema';
@@ -12,7 +12,7 @@ import { generalRef } from '../general/general.schema';
 
 export default async function notificationRoutes(app: FastifyInstance) {
 
-  //Get user notifications
+  // Get user notifications
   app.get('/getNotifications', {
     preHandler: app.authenticate,
     schema: {
@@ -23,7 +23,7 @@ export default async function notificationRoutes(app: FastifyInstance) {
     getNotificationsHandler
   );
 
-  //Mark a notification as read
+  // Mark a notification as read
   app.patch<{ Params: ReadNotificationInput }>('/markRead/:notificationId',
     {
       preHandler: app.authenticate,
@@ -40,7 +40,7 @@ export default async function notificationRoutes(app: FastifyInstance) {
     markNotificationReadHandler
   );
 
-  //Delete notification
+  // Delete notification
   app.delete<{ Params: ReadNotificationInput }>(
     '/delete/:notificationId',
     {
@@ -64,7 +64,7 @@ export default async function notificationRoutes(app: FastifyInstance) {
     {
       preHandler: [
         app.authenticate,
-        hasPermission(["super_admin"])
+        isSuperAdmin
       ],
       schema: {
         tags: ['Notifications', 'Admins'],
