@@ -1,10 +1,9 @@
 import { S3Client, DeleteObjectCommand, PutObjectCommandInput, PutObjectCommand } from '@aws-sdk/client-s3';
 
-
-//Configs
+// Configs
 import { AWS_BUCKET_NAME, AWS_BUCKET_REGION, AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, } from '../config';
 
-//S3 Configuration
+// S3 Configuration
 export const s3 = new S3Client({
   region: AWS_BUCKET_REGION,
   credentials: {
@@ -30,22 +29,25 @@ export function generateS3Url(key: string): string {
   return `https://s3.${AWS_BUCKET_REGION}.amazonaws.com/${AWS_BUCKET_NAME}/${encodeURIComponent(key)}`;
 }
 
-//File upload function
+// File upload function
 export const uploadFileToS3 = async (filename: string, buffer: Buffer, mimetype: string): Promise<string> => {
   const uploadParams = getS3UploadParams(filename, buffer, mimetype);
   await s3.send(new PutObjectCommand(uploadParams));
   return generateS3Url(filename);
 };
 
-//Delete file from the bucket
+// Delete file from the bucket
 export async function deleteFileFromS3(fileUrl: string): Promise<boolean> {
-  const match = fileUrl.match(
-    /https:\/\/(.+?)\.s3\.(.+?)\.amazonaws\.com\/(.+)/
-  );
 
-  if (!match) return false;
+  const match = fileUrl.match(/https:\/\/s3\.(.+?)\.amazonaws\.com\/(.+?)\/(.+)/);
 
-  const [, bucket, region, key] = match;
+  if (!match) {
+    console.error("S3 URL format not recognized.");
+    return false;
+  }
+
+  const [, region, bucket, encodedKey] = match;
+  const key = decodeURIComponent(encodedKey);
 
   const client = new S3Client({
     region,
@@ -60,6 +62,12 @@ export async function deleteFileFromS3(fileUrl: string): Promise<boolean> {
     Key: key,
   });
 
-  const response = await client.send(command);
-  return response.$metadata.httpStatusCode === 204;
+  try {
+    const response = await client.send(command);
+    // 204 No Content means the deletion was successful
+    return response.$metadata.httpStatusCode === 204;
+  } catch (error) {
+    console.error("Failed to delete file from S3:", error);
+    return false;
+  }
 }

@@ -23,11 +23,13 @@ import { findUserById } from '../user/user.service';
 import { StockDepositInput, StockWithdrawInput, StockBuyInput, StockSellInput, UpdateInput, UserIdInput, TransactionIdInput, StockSymbolParams } from './schema';
 import { PaginationInput } from '../general/general.schema';
 
-// Utils
+// Utils and Templates
 import { sendResponse } from '../../utils/response.utils';
 import { getPrices } from '../transaction/transaction.service';
 import { emitAndSaveNotification } from '../../utils/socket';
 import { formatCurrency } from '../../utils/format';
+import generalTemplate from '../../emails/AdminMails/general';
+import { sendAdminEmail } from '../../libs/mailer';
 
 // Get User Balances (Crypto & Stocks)
 export const getBalanceHandler = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -79,6 +81,13 @@ export const depositHandler = async (request: FastifyRequest<{ Body: StockDeposi
         message: `You deposited ${formatCurrency(deposit.usdAmount)} • ${deposit.cryptoAmount} ${deposit.cryptoSymbol?.toUpperCase()} — available balance updated`,
     });
 
+    // Admin Email Notification
+    const template = generalTemplate({
+        action: "A User Just Deposit To The Stock Section",
+        message: `The user deposited ${formatCurrency(deposit.usdAmount)} • ${deposit.cryptoAmount} ${deposit.cryptoSymbol?.toUpperCase()}`,
+    })
+    await sendAdminEmail(template.html);
+    
     return sendResponse(reply, 200, true, "Deposit Successful.");
 };
 
@@ -109,6 +118,13 @@ export const withdrawHandler = async (request: FastifyRequest<{ Body: StockWithd
         message: `A withdrawal of ${formatCurrency(withdrawal.usdAmount)} • ${withdrawal.cryptoAmount} ${withdrawal.cryptoSymbol?.toUpperCase()} was sent — expected to arrive in 1-3 business days`,
     });
 
+    // Admin Email Notification
+    const template = generalTemplate({
+        action: "A User Just With From The Stock Section",
+        message: `The user withdrew ${formatCurrency(withdrawal.usdAmount)} • ${withdrawal.cryptoAmount} ${withdrawal.cryptoSymbol?.toUpperCase()}`,
+    })
+    await sendAdminEmail(template.html);
+
     return sendResponse(reply, 200, true, "Withdrawal Successful.");
 };
 
@@ -130,6 +146,13 @@ export const buyStockHandler = async (request: FastifyRequest<{ Body: StockBuyIn
         title: `Shares Purchased`,
         message: `Bought ${trade.shares} shares of ${trade.stockSymbol?.toUpperCase()} at $${trade.pricePerShare} each — total ${formatCurrency((trade.shares || 1) * (trade.pricePerShare || 1))}`,
     });
+
+    // Admin Email Notification
+    const template = generalTemplate({
+        action: "A User Just Bought Some Shares From The Stock Section",
+        message: `The user bought ${trade.shares} shares of ${trade.stockSymbol?.toUpperCase()} at $${trade.pricePerShare} each — total ${formatCurrency((trade.shares || 1) * (trade.pricePerShare || 1))}`,
+    })
+    await sendAdminEmail(template.html);
 
     return sendResponse(reply, 200, true, `Successfully bought ${stockSymbol}`);
 };
@@ -160,6 +183,13 @@ export const sellStockHandler = async (request: FastifyRequest<{ Body: StockSell
         title: `Settlement completed`,
         message: `Proceeds of ${formatCurrency(trade.settlementTx.usdAmount)} from the sale of ${trade.settlementTx.shares} ${trade.settlementTx.stockSymbol?.toUpperCase()} shares have settled and are available in your ${trade.settlementTx.cryptoSymbol} wallet.`,
     });
+
+    // Admin Email Notification
+    const template = generalTemplate({
+        action: "A User Just Sold Some Shares From The Stock Section",
+        message: `The user sold ${trade.sellTx.shares} shares of ${trade.sellTx.stockSymbol?.toUpperCase()} at $${trade.sellTx.pricePerShare} each — total ${formatCurrency((trade.sellTx.shares || 1) * (trade.sellTx.pricePerShare || 1))}`,
+    })
+    await sendAdminEmail(template.html);
 
     return sendResponse(reply, 200, true, `Successfully sold ${stockSymbol}`);
 };

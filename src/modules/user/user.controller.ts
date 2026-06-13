@@ -255,6 +255,7 @@ export const updateProfilePictureHandler = async (request: FastifyRequest, reply
   // Delete Previous Profile Picture
   if (userDetails.profilePicture) {
     const deleted = await deleteFileFromS3(userDetails.profilePicture);
+    console.log("The deleted image", deleted)
     if (!deleted) return sendResponse(reply, 500, false, 'Something went wrong, kindly try again later.');
   }
 

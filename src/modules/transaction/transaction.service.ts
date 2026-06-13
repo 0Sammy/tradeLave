@@ -2,11 +2,11 @@ import mongoose, { AnyBulkWriteOperation } from 'mongoose';
 import TransactionModel, { TransactionCoin, TransactionDocument, TransactionStatus, TransactionType } from './transaction.model';
 import InvestmentModel, { InvestmentStatus } from '../investment/investment.model';
 import axios from 'axios';
-import { COINGECKO_API_KEY } from '../../config';
 
-// Utils
+// Utils and Config
 import { coinMap, USER_PUBLIC_FIELDS } from '../../utils/format';
 import { coingeckoURL } from './transaction.controller';
+import { COINGECKO_API_KEY } from '../../config';
 
 // Constants
 const cache = new Map();
@@ -26,13 +26,13 @@ type newTransaction = {
   transactionHash?: string;
 };
 
-//New Transaction
+// New Transaction
 export const createNewTransaction = async (input: newTransaction) => {
   const newTransaction = await TransactionModel.create(input);
   return newTransaction;
 };
 
-//Get Prices
+// Get Prices
 export const getPrices = async () => {
   const now = Date.now();
   const cached = cache.get(CACHE_KEY);
@@ -53,12 +53,12 @@ export const getPrices = async () => {
   return data;
 };
 
-//Fetch a Particular Transaction
+// Fetch a Particular Transaction
 export const getTransactionById = async (id: string) => {
   return await TransactionModel.findById(id);
 };
 
-//Get the balance of each coin
+// Get the balance of each coin
 export const getUserBalanceByCoin = async (userId: string) => {
   const transactions = await TransactionModel.find({
     user: userId,

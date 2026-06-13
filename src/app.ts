@@ -20,6 +20,7 @@ import { referralSchemas } from './modules/referral/referral.schema';
 import { investmentSchemas } from './modules/investment/investment.schema';
 import { stockSchemas } from './modules/stock/schema';
 import { settingsSchemas } from './modules/settings/schema';
+import { requestSchemas } from './modules/stockRequest/schema';
 
 // Routes
 import userRoutes from './modules/user/user.route';
@@ -33,6 +34,7 @@ import referralRoutes from './modules/referral/referral.routes';
 import investmentRoutes from './modules/investment/investment.routes';
 import stockRoutes from './modules/stock/route';
 import settingsRoutes from './modules/settings/route';
+import requestRoutes from './modules/stockRequest/route';
 
 //  Utils
 import { sendResponse } from './utils/response.utils';
@@ -110,6 +112,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     ...investmentSchemas,
     ...stockSchemas,
     ...settingsSchemas,
+    ...requestSchemas,
   ]) {
     app.addSchema(schema);
   }
@@ -125,6 +128,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   app.register(investmentRoutes, { prefix: '/v1/api/investments' });
   app.register(stockRoutes, { prefix: '/v1/api/stocks' });
   app.register(settingsRoutes, { prefix: '/v1/api/settings' });
+  app.register(requestRoutes, { prefix: '/v1/api/stock-requests' });
 
 
   // Register cron jobs
@@ -136,8 +140,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   });
 
   // Global error handler
-  app.setErrorHandler((error: FastifyError, request, reply) => {
-    request.log.error(error);
+  app.setErrorHandler((error: FastifyError, _, reply) => {
+    console.log("Global Error Handler:", error);
     return sendResponse(reply, 500, false, error.message);
   });
 

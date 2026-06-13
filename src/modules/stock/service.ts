@@ -321,7 +321,7 @@ export const executeSellStock = async (
 };
 
 // Helper
-const getPaginationMeta = (total: number, page: number, limit: number) => ({
+export const getPaginationMeta = (total: number, page: number, limit: number) => ({
     total,
     page,
     limit,

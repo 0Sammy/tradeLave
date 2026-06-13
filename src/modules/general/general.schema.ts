@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { buildJsonSchemas } from 'fastify-zod';
 
+
 export const responseCore = {
   status: z.number(),
   success: z.boolean(),
@@ -10,6 +11,11 @@ export const responseCore = {
 export const paginationSchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
+});
+
+// General ID Schema
+export const idSchema = z.object({
+  id: z.string({ required_error: "Id must be a string" }),
 });
 
 const responseSchema = z.object(responseCore);
@@ -22,6 +28,7 @@ const payloadSchema = z.object(responseCore);
 const unsupportedSchema = z.object(responseCore);
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
+export type IdInput = z.infer<typeof idSchema>;
 
 export const { schemas: generalSchemas, $ref: generalRef } = buildJsonSchemas(
   {
