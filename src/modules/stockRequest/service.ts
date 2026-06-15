@@ -26,12 +26,12 @@ export const fetchPurchaseRequest = async (userId: string) => {
 
 // Update Request (Chat & File Upload)
 export const updatePurchaseRequest = async (purchaseId: string, role: string, hasPaid: boolean, message?: string, fileUrl?: string, status?: string) => {
-    
+
+
     const request = await StockRequest.findById(purchaseId);
     if (!request) throw new Error("Purchase request not found");
 
     if (message?.trim()) {
-
         // Initialize the role array if it doesn't exist in the Map
         if (!request.details.has(role)) {
             request.details.set(role, []);
@@ -48,10 +48,14 @@ export const updatePurchaseRequest = async (purchaseId: string, role: string, ha
     // Update hasPaid status
     if (hasPaid) request.hasPaid = true;
 
-    // Update Status
+    // Check if this is the FIRST time it's being marked successful
+    const isFirstApproval = request.status !== "successful" && status === "successful";
+
     if (status) request.status = status as PurchaseStatus;
 
-    if (request.status !== PurchaseStatus.SUCCESSFUL && status === PurchaseStatus.SUCCESSFUL) {
+    console.log("It reached here")
+
+    if (isFirstApproval) {
         // Automatically add the shares to their portfolio!
         await StockTransaction.create({
             userId: request.user,
@@ -66,7 +70,6 @@ export const updatePurchaseRequest = async (purchaseId: string, role: string, ha
 
     return await request.save();
 };
-
 
 // Admin
 

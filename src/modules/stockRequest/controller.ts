@@ -108,7 +108,7 @@ export const updateStockPurchaseHandler = async (request: FastifyRequest, reply:
     if (!purchaseId) return sendResponse(reply, 400, false, "Missing required fields");
 
     const updatedRequest = await updatePurchaseRequest(purchaseId, role, hasPaid, message, fileUrl, status);
-    return sendResponse(reply, 200, true, "Message sent successfully", updatedRequest);
+    return sendResponse(reply, 200, true, "Request was updated successfully", updatedRequest);
 };
 
 // Fetch Users Requests
