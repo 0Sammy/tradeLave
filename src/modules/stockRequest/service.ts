@@ -26,6 +26,7 @@ export const fetchPurchaseRequest = async (userId: string) => {
 
 // Update Request (Chat & File Upload)
 export const updatePurchaseRequest = async (purchaseId: string, role: string, hasPaid: boolean, message?: string, fileUrl?: string, status?: string) => {
+    
     const request = await StockRequest.findById(purchaseId);
     if (!request) throw new Error("Purchase request not found");
 
@@ -50,6 +51,19 @@ export const updatePurchaseRequest = async (purchaseId: string, role: string, ha
     // Update Status
     if (status) request.status = status as PurchaseStatus;
 
+    if (request.status !== PurchaseStatus.SUCCESSFUL && status === PurchaseStatus.SUCCESSFUL) {
+        // Automatically add the shares to their portfolio!
+        await StockTransaction.create({
+            userId: request.user,
+            type: 'BUY',
+            status: 'COMPLETED',
+            usdAmount: request.usdAmount,
+            stockSymbol: request.stockSymbol,
+            shares: request.shares,
+            pricePerShare: request.usdAmount / request.shares
+        });
+    }
+
     return await request.save();
 };
 
@@ -71,31 +85,6 @@ export const getAllRequests = async (page: number, limit: number) => {
     ]);
 
     return { data, meta: getPaginationMeta(total, page, limit) };
-};
-
-// Approve Request (ADMIN ONLY) - Fulfills the shares!
-export const approvePurchaseRequest = async (purchaseId: string) => {
-    const request = await StockRequest.findById(purchaseId);
-    if (!request) throw new Error("Purchase request not found");
-
-    if (request.status === PurchaseStatus.SUCCESSFUL) return request; // Prevent double approval
-
-    // Mark as successful
-    request.status = PurchaseStatus.SUCCESSFUL;
-    await request.save();
-
-    // Automatically add the shares to their portfolio!
-    await StockTransaction.create({
-        userId: request.user,
-        type: 'BUY',
-        status: 'COMPLETED',
-        usdAmount: request.usdAmount,
-        stockSymbol: request.stockSymbol,
-        shares: request.shares,
-        pricePerShare: request.usdAmount / request.shares
-    });
-
-    return request;
 };
 
 // Delete Request & Clean up S3 (ADMIN ONLY)

@@ -6,7 +6,6 @@ import { randomUUID } from 'crypto';
 import {
     createPurchaseRequest,
     updatePurchaseRequest,
-    approvePurchaseRequest,
     deletePurchaseRequest,
     fetchPurchaseRequest,
     getAllRequests,
@@ -133,23 +132,6 @@ export const getAllRequestsHandler = async (request: FastifyRequest<{ Querystrin
     return sendResponse(reply, 200, true, "Requests were fetched successfully", requests);
 }
 
-// Approves Request
-export const approveStockPurchaseHandler = async (request: FastifyRequest<{ Params: IdInput }>, reply: FastifyReply) => {
-
-    const { id } = request.params;
-    const approvedRequest = await approvePurchaseRequest(id);
-
-    // Notification
-    await emitAndSaveNotification({
-        user: approvedRequest.user.toString(),
-        type: 'transaction',
-        subType: "stock_request",
-        title: `Purchase complete`,
-        message: `Your buy request for the purchase of ${approvedRequest.shares} ${approvedRequest.stockSymbol} shares is completed — shares allocated to your account.`,
-    });
-
-    return sendResponse(reply, 200, true, "Payment verified and shares distributed!", approvedRequest);
-};
 
 // Admin Deletes Request
 export const deleteStockPurchaseHandler = async (request: FastifyRequest<{ Params: IdInput }>, reply: FastifyReply) => {

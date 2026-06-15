@@ -55,16 +55,6 @@ export default async function requestRoutes(app: FastifyInstance) {
     }, StockRequestHandlers.getAllRequestsHandler
     )
 
-    // Approve Request
-    app.patch<{ Params: IdInput }>("/approve/:id", {
-        preHandler: [app.authenticate, isSuperAdmin],
-        schema: {
-            tags: ['Stock Requests', "Admins"],
-            security: [{ bearerAuth: [] }],
-        },
-    }, StockRequestHandlers.approveStockPurchaseHandler
-    )
-
     // Delete Request
     app.delete<{ Params: IdInput }>("/delete/:id", {
         preHandler: [app.authenticate, isSuperAdmin],
