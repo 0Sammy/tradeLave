@@ -25,24 +25,30 @@ export const fetchPurchaseRequest = async (userId: string) => {
 }
 
 // Update Request (Chat & File Upload)
-export const updatePurchaseRequest = async (purchaseId: string, role: string, message: string, hasPaid: boolean, fileUrl?: string) => {
+export const updatePurchaseRequest = async (purchaseId: string, role: string, hasPaid: boolean, message?: string, fileUrl?: string, status?: string) => {
     const request = await StockRequest.findById(purchaseId);
     if (!request) throw new Error("Purchase request not found");
 
-    // Initialize the role array if it doesn't exist in the Map
-    if (!request.details.has(role)) {
-        request.details.set(role, []);
-    }
+    if (message?.trim()) {
 
-    // Add the new message
-    request.details.get(role)?.push({
-        message,
-        file: fileUrl,
-        at: new Date()
-    });
+        // Initialize the role array if it doesn't exist in the Map
+        if (!request.details.has(role)) {
+            request.details.set(role, []);
+        }
+
+        // Add the new message
+        request.details.get(role)?.push({
+            message,
+            file: fileUrl,
+            at: new Date()
+        });
+    }
 
     // Update hasPaid status
     if (hasPaid) request.hasPaid = true;
+
+    // Update Status
+    if (status) request.status = status as PurchaseStatus;
 
     return await request.save();
 };
@@ -56,12 +62,12 @@ export const getAllRequests = async (page: number, limit: number) => {
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
-        StockTransaction.find()
+        StockRequest.find()
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .populate('user', USER_PUBLIC_FIELDS),
-        StockTransaction.countDocuments()
+        StockRequest.countDocuments()
     ]);
 
     return { data, meta: getPaginationMeta(total, page, limit) };

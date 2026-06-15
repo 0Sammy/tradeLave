@@ -82,6 +82,7 @@ export const updateStockPurchaseHandler = async (request: FastifyRequest, reply:
     let role: string = "user";
     let hasPaid = false;
     let fileUrl: string | undefined;
+    let status: string | undefined;
 
     for await (const part of parts) {
         if (part.type === "file") {
@@ -101,12 +102,13 @@ export const updateStockPurchaseHandler = async (request: FastifyRequest, reply:
             if (part.fieldname === "message") message = part.value as string;
             if (part.fieldname === "role") role = part.value as string;
             if (part.fieldname === "hasPaid") hasPaid = part.value === "true";
+            if (part.fieldname === "status") status = part.value as string;
         }
     }
 
-    if (!purchaseId || !message) return sendResponse(reply, 400, false, "Missing required fields");
+    if (!purchaseId) return sendResponse(reply, 400, false, "Missing required fields");
 
-    const updatedRequest = await updatePurchaseRequest(purchaseId, role, message, hasPaid, fileUrl);
+    const updatedRequest = await updatePurchaseRequest(purchaseId, role, hasPaid, message, fileUrl, status);
     return sendResponse(reply, 200, true, "Message sent successfully", updatedRequest);
 };
 
