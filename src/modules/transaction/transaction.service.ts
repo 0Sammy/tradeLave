@@ -78,7 +78,7 @@ export const getUserBalanceByCoin = async (userId: string) => {
     return acc;
   }, {} as Record<TransactionCoin, number>);
 
-  // 1️Apply transactions
+  // Apply transactions
   for (const tx of transactions) {
     const coin = tx.coin;
 
@@ -173,20 +173,27 @@ export const getDashboardValues = async (userId: string) => {
 
   // Build coin balance map (ONLY transactions)
   const balanceByCoin = await getUserBalanceByCoin(userId)
+
   let totalROIs = 0;
   let totalRewards = 0;
+  let totalBalance = 0;
+  let activeStakes = 0;
 
+  // For Total ROIs and Referral
   for (const tx of txs) {
+    const coin = tx._id.coin as TransactionCoin;
     const type = tx._id.type;
-    const amount = tx.total;
+    const coinAmount = tx.total;
 
-    if (type === 'roi') totalROIs += amount;
-    if (type === 'referral') totalRewards += amount;
+    const apiKey = coinMap[coin];
+    const price = priceData?.[apiKey]?.usd ?? 0;
+    const usdValue = coinAmount * price;
+
+    if (type === 'roi') totalROIs += usdValue;
+    if (type === 'referral') totalRewards += usdValue;
   }
 
-  // Convert transaction balances → USD
-  let totalBalance = 0;
-
+  // For Balance
   for (const coin in balanceByCoin) {
     const apiKey = coinMap[coin];
     const price = priceData?.[apiKey]?.usd ?? 0;
@@ -194,9 +201,7 @@ export const getDashboardValues = async (userId: string) => {
     totalBalance += balanceByCoin[coin as TransactionCoin] * price;
   }
 
-  // Compute ONLY total holdings (ACTIVE investments)
-  let activeStakes = 0;
-
+  // For ROI
   for (const inv of investments) {
     activeStakes += inv.total;
   }
