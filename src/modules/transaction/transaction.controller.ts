@@ -45,7 +45,7 @@ export const createNewTransactionHandler = async (request: FastifyRequest<{ Body
   // Fetch user balance and make sure user has that amount
   if (request.body.transactionType === "withdrawal") {
     const balance = await getUserBalanceByCoin(userId);
-    if (balance[request.body.coin] < request.body.amount) {
+    if (balance[request.body.coin] < request.body.coinAmount) {
       return sendResponse(reply, 409, false, `Transaction Incomplete. Insufficient ${request.body.coin} Balance`);
     }
   }
